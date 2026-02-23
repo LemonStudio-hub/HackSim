@@ -27,23 +27,93 @@
         <Terminal />
       </div>
     </main>
+
+    <!-- 移动端底部导航栏 -->
+    <div class="mobile-nav">
+      <button
+        class="nav-btn"
+        :class="{ active: activeTab === 'terminal' }"
+        @click="switchTab('terminal')"
+      >
+        <span class="nav-icon">>></span>
+        <span class="nav-label">Terminal</span>
+      </button>
+      <button
+        class="nav-btn"
+        :class="{ active: activeTab === 'user' }"
+        @click="switchTab('user')"
+      >
+        <span class="nav-icon">@</span>
+        <span class="nav-label">User</span>
+      </button>
+      <button
+        class="nav-btn"
+        :class="{ active: activeTab === 'mission' }"
+        @click="switchTab('mission')"
+      >
+        <span class="nav-icon">!</span>
+        <span class="nav-label">Missions</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from './stores/game'
 import Terminal from './components/Terminal.vue'
 import UserPanel from './components/UserPanel.vue'
 import MissionPanel from './components/MissionPanel.vue'
 
 const gameStore = useGameStore()
+const activeTab = ref('terminal')
+const isMobile = ref(false)
 
 // 版本号（从 package.json 读取）
 const version = '0.1.0'
 
+/**
+ * 检测是否为移动设备
+ */
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 640
+}
+
+/**
+ * 切换标签页
+ */
+function switchTab(tab: string) {
+  activeTab.value = tab
+  
+  // 在移动端，滚动到对应内容
+  if (isMobile.value) {
+    setTimeout(() => {
+      const sidebar = document.querySelector('.sidebar')
+      const content = document.querySelector('.content')
+      
+      if (tab === 'terminal') {
+        content?.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        sidebar?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, 100)
+  }
+}
+
+/**
+ * 处理窗口大小变化
+ */
+function handleResize() {
+  checkMobile()
+}
+
 onMounted(() => {
-  // 游戏初始化在 Terminal 组件中进行
+  checkMobile()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -178,12 +248,53 @@ onMounted(() => {
   overflow: hidden;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+// 移动端导航栏
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, var(--bg-dark) 0%, rgba(13, 2, 8, 0.95) 100%);
+  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-xs) 0;
+  z-index: var(--z-modal);
+  backdrop-filter: blur(10px);
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: none;
+  border-top: 3px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base) var(--ease-out);
+
+  &:active {
+    transform: scale(0.95);
   }
-  50% {
-    opacity: 0.5;
+
+  &.active {
+    color: var(--primary);
+    border-top-color: var(--primary);
+  }
+
+  .nav-icon {
+    font-size: var(--font-size-lg);
+    font-family: var(--font-family-mono);
+    font-weight: bold;
+  }
+
+  .nav-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
   }
 }
 
@@ -225,6 +336,34 @@ onMounted(() => {
     flex-direction: column;
     gap: var(--spacing-sm);
     align-items: flex-start;
+    padding: var(--spacing-sm);
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .app-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .app-version {
+    display: none;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+  }
+
+  .status-indicator {
+    flex: 1;
+  }
+
+  .play-time {
+    display: none;
   }
 
   .app-main {
@@ -233,9 +372,68 @@ onMounted(() => {
 
   .sidebar {
     width: 100%;
-    max-height: 40%;
+    max-height: 35%;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .content {
+    flex: 1;
+    min-height: 65vh;
+  }
+
+  .mobile-nav {
+    display: flex;
+  }
+}
+
+// 超小屏幕优化
+@media (max-width: 480px) {
+  .app-header {
+    padding: var(--spacing-xs);
+  }
+
+  .app-title {
+    font-size: var(--font-size-base);
+  }
+
+  .status-text {
+    font-size: var(--font-size-xs);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .sidebar {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+}
+
+// 横屏模式优化
+@media (max-height: 600px) and (orientation: landscape) {
+  .app-header {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .app-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .app-version {
+    display: none;
+  }
+
+  .sidebar {
+    width: 250px;
+    max-height: none;
+    border-right: 1px solid var(--border-color);
+    border-bottom: none;
   }
 }
 </style>

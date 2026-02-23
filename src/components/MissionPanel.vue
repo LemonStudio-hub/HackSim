@@ -409,6 +409,18 @@ function showMissions() {
   transition: all var(--transition-base) var(--ease-out);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+
+  // 移动端优化：增加触摸目标大小
+  @media (hover: none) and (pointer: coarse) {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+  }
+
+  // 移动端优化：移除 hover 效果，改用 active 效果
+  @media (max-width: 640px) {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+  }
 }
 
 .btn-primary {
@@ -420,6 +432,13 @@ function showMissions() {
     transform: translateY(-2px);
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
   }
+
+  @media (max-width: 640px) {
+    &:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+  }
 }
 
 .btn-secondary {
@@ -430,6 +449,105 @@ function showMissions() {
   &:hover {
     background-color: var(--border-color);
     border-color: var(--primary);
+  }
+
+  @media (max-width: 640px) {
+    &:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+  }
+}
+
+// 移动端优化
+@media (max-width: 640px) {
+  .mission-panel {
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .panel-header {
+    padding: var(--spacing-sm);
+  }
+
+  .panel-content {
+    padding: var(--spacing-sm);
+  }
+
+  .active-mission {
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  .mission-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .mission-title {
+    font-size: var(--font-size-base);
+  }
+
+  .mission-info {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .info-row {
+    padding: var(--spacing-xs) 0;
+  }
+
+  .objectives-list {
+    padding-left: var(--spacing-sm);
+  }
+
+  .available-missions {
+    margin-top: var(--spacing-sm);
+  }
+
+  .mission-card {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .mission-card-header {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .mission-card-title {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .mission-card-info {
+    font-size: var(--font-size-xs);
+  }
+
+  .mission-stats {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+  }
+
+  .stat-row {
+    padding: var(--spacing-xs) 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .mission-badge {
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+  }
+
+  .star,
+  .star-small {
+    font-size: var(--font-size-xs);
+  }
+
+  .mission-number {
+    font-size: var(--font-size-xs);
   }
 }
 </style>

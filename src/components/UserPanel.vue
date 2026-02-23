@@ -228,4 +228,50 @@ const totalExpEarned = computed(() => {
   font-weight: var(--font-weight-bold);
   font-family: var(--font-family-mono);
 }
+
+// 移动端优化
+@media (max-width: 640px) {
+  .panel-header {
+    padding: var(--spacing-sm);
+  }
+
+  .panel-content {
+    padding: var(--spacing-sm);
+  }
+
+  .info-row {
+    padding: var(--spacing-xs) 0;
+  }
+
+  .exp-section {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-xs);
+  }
+
+  .stats-section {
+    margin-top: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .panel-content {
+    padding: var(--spacing-xs);
+  }
+
+  .info-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .info-value {
+    font-size: var(--font-size-xs);
+  }
+
+  .exp-bar {
+    height: 6px;
+  }
+
+  .stat-item {
+    padding: var(--spacing-xs);
+  }
+}
 </style>
