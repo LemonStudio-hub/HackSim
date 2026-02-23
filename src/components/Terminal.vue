@@ -193,6 +193,9 @@ async function executeCommand(input: string) {
   if (!command) {
     terminal?.writeln(`Error: Command not found: ${commandName}`)
     terminal?.writeln(`Type 'help' to see available commands.`)
+    // 输出提示符
+    terminal?.writeln('')
+    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
     return
   }
 
@@ -202,8 +205,14 @@ async function executeCommand(input: string) {
     if (output) {
       terminal?.writeln(output)
     }
+    // 输出提示符
+    terminal?.writeln('')
+    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
   } catch (error) {
     terminal?.writeln(`Error: ${error}`)
+    // 输出提示符
+    terminal?.writeln('')
+    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
   }
 }
 
