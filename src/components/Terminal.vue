@@ -131,9 +131,9 @@ function showWelcomeMessage() {
   terminal.writeln('')
   
   // 显示引导提示
-  terminal.writeln('💡 提示：输入 help 命令查看所有可用命令')
+  terminal.writeln('提示：输入 help 命令查看所有可用命令')
   terminal.writeln('')
-  terminal.writeln('💡 提示：输入 missions 命令查看可用任务')
+  terminal.writeln('提示：输入 missions 命令查看可用任务')
   terminal.writeln('')
   terminal.writeln('─────────────────────────────────────────────────────────')
   terminal.writeln('')

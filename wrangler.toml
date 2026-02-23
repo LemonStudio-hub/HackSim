@@ -1,0 +1,64 @@
+# wrangler.toml 用于 Cloudflare Workers 配置
+# 这是一个模板文件，用于将 HackSim 部署到 Cloudflare 平台
+
+name = "hacksim"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Cloudflare Pages 部署配置（用于前端）
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# Cloudflare Workers 配置（用于后端 API）
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# KV 命名空间绑定（用于数据存储）
+[[kv_namespaces]]
+binding = "HACKSIM_KV"
+id = "your-kv-namespace-id"
+
+# D1 数据库绑定（用于关系型数据存储）
+[[d1_databases]]
+binding = "HACKSIM_DB"
+database_name = "hacksim"
+database_id = "your-database-id"
+
+# R2 存储绑定（用于文件存储）
+[[r2_buckets]]
+binding = "HACKSIM_R2"
+bucket_name = "hacksim-storage"
+
+# 环境变量
+[vars]
+API_BASE_URL = "https://api.hacksim.com"
+VERSION = "0.1.0"
+MAX_PLAYERS = "1000"
+
+# 密钥配置（从环境变量读取）
+# 在 Cloudflare Dashboard 中配置这些变量
+# wrangler secret put JWT_SECRET
+# wrangler secret put DATABASE_URL
+
+# 路由配置
+[[routes]]
+pattern = "https://api.hacksim.com/*"
+zone_name = "hacksim.com"
+
+# 构建配置
+[build]
+command = "npm run build"
+cwd = "."
+
+# 监视配置
+[build.upload]
+format = "modules"
+main = "./dist/index.mjs"
+
+# Workers AI 配置（用于 AI 功能）
+[ai]
+binding = "AI"
+
+# Cron Triggers（定时任务）
+[triggers]
+crons = ["0 * * * *"]  # 每小时执行一次

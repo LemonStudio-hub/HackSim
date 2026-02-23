@@ -45,7 +45,6 @@
 
       <!-- 无活跃任务 -->
       <div v-else class="no-mission">
-        <div class="no-mission-icon">📋</div>
         <p class="no-mission-text">No active mission</p>
         <button class="btn-primary" @click="showMissions">
           View Available Missions
@@ -277,12 +276,6 @@ function showMissions() {
   justify-content: center;
   padding: var(--spacing-xl);
   text-align: center;
-}
-
-.no-mission-icon {
-  font-size: 48px;
-  margin-bottom: var(--spacing-md);
-  opacity: 0.5;
 }
 
 .no-mission-text {

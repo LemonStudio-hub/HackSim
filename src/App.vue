@@ -13,7 +13,6 @@
           <span class="status-text">{{ gameStore.isRunning ? 'ONLINE' : 'OFFLINE' }}</span>
         </div>
         <div class="play-time">
-          <span class="play-time-icon">⏱️</span>
           <span class="play-time-value">{{ gameStore.formattedPlayTime }}</span>
         </div>
       </div>
@@ -148,10 +147,6 @@ onMounted(() => {
   background-color: var(--bg-hover);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
-
-  .play-time-icon {
-    font-size: var(--font-size-sm);
-  }
 
   .play-time-value {
     font-size: var(--font-size-sm);
