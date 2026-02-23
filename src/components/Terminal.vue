@@ -1,25 +1,11 @@
 <template>
   <div class="terminal-container">
     <div ref="terminalRef" class="terminal"></div>
-    <div class="terminal-input-line">
-      <span class="prompt">></span>
-      <input
-        ref="inputRef"
-        v-model="inputValue"
-        type="text"
-        class="terminal-input"
-        @keydown="handleKeyDown"
-        placeholder="Enter command..."
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <span class="cursor" :class="{ 'blink': isFocused }"></span>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { useTerminalStore } from '../stores/terminal'
@@ -33,9 +19,6 @@ import { missionsCommand, acceptCommand, statusCommand } from '../modules/comman
 import { useGestures, isTouchDevice, preventScroll } from '../composables/useGestures'
 
 const terminalRef = ref<HTMLElement>()
-const inputRef = ref<HTMLInputElement>()
-const inputValue = ref('')
-const isFocused = ref(false)
 
 const terminalStore = useTerminalStore()
 const playerStore = usePlayerStore()
@@ -45,9 +28,20 @@ const gameStore = useGameStore()
 let terminal: Terminal | null = null
 let fitAddon: FitAddon | null = null
 let commandRegistry: CommandRegistry | null = null
+let currentLine = ''
+let commandHistory: string[] = []
+let historyIndex = -1
 
 // 检测是否为触摸设备
 const isTouch = computed(() => isTouchDevice())
+
+/**
+ * 显示提示符
+ */
+function showPrompt() {
+  if (!terminal) return
+  terminal.write('\x1b[32m>\x1b[0m ')
+}
 
 /**
  * 初始化终端
@@ -88,6 +82,9 @@ function initTerminal() {
   // 显示欢迎信息
   showWelcomeMessage()
 
+  // 显示初始提示符
+  showPrompt()
+
   // 生成初始任务
   missionStore.generateMissions(playerStore.player.level)
 
@@ -102,10 +99,9 @@ function initTerminal() {
   // 初始化手势控制
   initTouchGestures()
 
-  // 聚焦输入框
-  nextTick(() => {
-    inputRef.value?.focus()
-  })
+  // 添加键盘输入监听
+  terminal.onData(handleTerminalInput)
+  terminal.onKey(handleKeyInput)
 }
 
 /**
@@ -116,11 +112,6 @@ function initTouchGestures() {
 
   // 使用手势组合式函数
   const { initGestures } = useGestures(terminalRef, {
-    // 长按聚焦输入框
-    onLongPress: () => {
-      inputRef.value?.focus()
-      terminal?.writeln('Input focused.')
-    },
     // 捏指缩放字体
     onPinch: (scale) => {
       const currentSize = terminalStore.fontSize
@@ -177,10 +168,90 @@ function showWelcomeMessage() {
 }
 
 /**
+ * 处理终端数据输入
+ */
+function handleTerminalInput(data: string) {
+  if (!terminal) return
+
+  // 处理特殊字符
+  if (data === '\r') {
+    // 回车键 - 执行命令
+    terminal.writeln('')
+    if (currentLine.trim()) {
+      // 添加到历史记录
+      commandHistory.push(currentLine)
+      historyIndex = commandHistory.length
+      // 执行命令
+      executeCommand(currentLine)
+    } else {
+      // 空行 - 显示新提示符
+      showPrompt()
+    }
+    currentLine = ''
+  } else if (data === '\u007F') {
+    // Backspace
+    if (currentLine.length > 0) {
+      currentLine = currentLine.slice(0, -1)
+      terminal.write('\b \b')
+    }
+  } else if (data.charCodeAt(0) >= 32) {
+    // 可打印字符
+    currentLine += data
+    terminal.write(data)
+  }
+}
+
+/**
+ * 处理按键输入
+ */
+function handleKeyInput(event: { key: string; domEvent: KeyboardEvent }) {
+  if (!terminal) return
+
+  if (event.domEvent.key === 'ArrowUp') {
+    event.domEvent.preventDefault()
+    if (historyIndex > 0) {
+      // 清除当前行
+      while (currentLine.length > 0) {
+        terminal.write('\b \b')
+        currentLine = currentLine.slice(0, -1)
+      }
+      // 显示上一条命令
+      historyIndex--
+      currentLine = commandHistory[historyIndex]
+      terminal.write(currentLine)
+    }
+  } else if (event.domEvent.key === 'ArrowDown') {
+    event.domEvent.preventDefault()
+    if (historyIndex < commandHistory.length - 1) {
+      // 清除当前行
+      while (currentLine.length > 0) {
+        terminal.write('\b \b')
+        currentLine = currentLine.slice(0, -1)
+      }
+      // 显示下一条命令
+      historyIndex++
+      currentLine = commandHistory[historyIndex]
+      terminal.write(currentLine)
+    } else if (historyIndex === commandHistory.length - 1) {
+      // 清除当前行
+      while (currentLine.length > 0) {
+        terminal.write('\b \b')
+        currentLine = currentLine.slice(0, -1)
+      }
+      historyIndex = commandHistory.length
+      currentLine = ''
+    }
+  }
+}
+
+/**
  * 执行命令
  */
 async function executeCommand(input: string) {
   if (!commandRegistry || !terminal) return
+
+  // 显示执行的命令
+  terminal.writeln(`\x1b[32m>\x1b[0m ${input}`)
 
   // 解析命令和参数
   const parts = input.trim().split(/\s+/)
@@ -195,7 +266,7 @@ async function executeCommand(input: string) {
     terminal?.writeln(`Type 'help' to see available commands.`)
     // 输出提示符
     terminal?.writeln('')
-    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
+    showPrompt()
     return
   }
 
@@ -207,39 +278,12 @@ async function executeCommand(input: string) {
     }
     // 输出提示符
     terminal?.writeln('')
-    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
+    showPrompt()
   } catch (error) {
     terminal?.writeln(`Error: ${error}`)
     // 输出提示符
     terminal?.writeln('')
-    terminal?.write('\x1b[32m>\x1b[0m ') // 绿色提示符
-  }
-}
-
-/**
- * 处理键盘事件
- */
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    
-    const command = inputValue.value.trim()
-    
-    if (command) {
-      // 显示输入的命令
-      terminal?.writeln(`> ${command}`)
-      
-      // 执行命令
-      executeCommand(command)
-    }
-    
-    // 清空输入
-    inputValue.value = ''
-    
-    // 滚动到底部
-    nextTick(() => {
-      terminal?.scrollToBottom()
-    })
+    showPrompt()
   }
 }
 
@@ -253,13 +297,6 @@ function handleResize() {
 onMounted(() => {
   initTerminal()
   window.addEventListener('resize', handleResize)
-  window.addEventListener('focus', () => {
-    isFocused.value = true
-    inputRef.value?.focus()
-  })
-  window.addEventListener('blur', () => {
-    isFocused.value = false
-  })
 })
 
 onUnmounted(() => {
@@ -294,77 +331,6 @@ onUnmounted(() => {
   // 超小屏幕优化
   @media (max-width: 480px) {
     padding: var(--spacing-xs);
-  }
-}
-
-.terminal-input-line {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md);
-  background-color: var(--bg-dark);
-  border-top: 1px solid var(--border-color);
-  position: relative;
-
-  // 移动端优化
-  @media (max-width: 640px) {
-    padding: var(--spacing-sm);
-  }
-
-  // 超小屏幕优化
-  @media (max-width: 480px) {
-    padding: var(--spacing-xs);
-  }
-}
-
-.prompt {
-  color: var(--primary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-base);
-  font-weight: bold;
-  margin-right: var(--spacing-sm);
-  flex-shrink: 0;
-}
-
-.terminal-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-base);
-  caret-color: transparent;
-  padding: var(--spacing-xs) 0;
-  min-height: 32px; // 增加最小高度，提高触摸体验
-
-  &::placeholder {
-    color: var(--text-muted);
-  }
-
-  // 移动端优化
-  @media (max-width: 640px) {
-    font-size: 16px; // 增大字体大小
-    min-height: 44px; // 44px 是推荐的触摸目标最小尺寸
-  }
-}
-
-.cursor {
-  width: 8px;
-  height: 16px;
-  background-color: var(--primary);
-  margin-left: -8px;
-
-  &.blink {
-    animation: blink 1s step-end infinite;
-  }
-}
-
-@keyframes blink {
-  0%, 50% {
-    opacity: 1;
-  }
-  51%, 100% {
-    opacity: 0;
   }
 }
 
@@ -405,47 +371,12 @@ onUnmounted(() => {
   .terminal {
     font-size: 12px;
   }
-
-  .terminal-input-line {
-    padding: var(--spacing-sm);
-  }
-
-  .prompt {
-    font-size: var(--font-size-sm);
-    margin-right: var(--spacing-xs);
-  }
-
-  .cursor {
-    width: 6px;
-    height: 14px;
-  }
 }
 
 @media (max-width: 480px) {
   .terminal {
     font-size: 11px;
     padding: var(--spacing-xs);
-  }
-
-  .terminal-input-line {
-    padding: var(--spacing-xs);
-  }
-
-  .prompt {
-    font-size: var(--font-size-xs);
-  }
-}
-
-// 触摸设备优化
-@media (hover: none) and (pointer: coarse) {
-  .terminal-input {
-    font-size: 16px;
-    min-height: 44px;
-  }
-
-  .cursor {
-    width: 10px;
-    height: 20px;
   }
 }
 
@@ -456,10 +387,6 @@ onUnmounted(() => {
   }
 
   .terminal {
-    padding: var(--spacing-sm);
-  }
-
-  .terminal-input-line {
     padding: var(--spacing-sm);
   }
 }
