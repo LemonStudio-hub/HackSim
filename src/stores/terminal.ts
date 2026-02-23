@@ -155,15 +155,9 @@ export const useTerminalStore = defineStore('terminal', () => {
     return `
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║   ██╗   ██╗██╗██████╗ ██████╗  █████╗ ██████╗              ║
-║   ██║   ██║██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗             ║
-║   ██║   ██║██║██║  ██║██║  ██║███████║██║  ██║             ║
-║   ╚██╗ ██╔╝██║██║  ██║██║  ██║██╔══██║██║  ██║             ║
-║    ╚████╔╝ ██║██████╔╝██████╔╝██║  ██║██████╔╝             ║
-║     ╚═══╝  ╚═╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝              ║
-║                  Simulator v${version.padEnd(46)}║
+║   HACKSIM v${version.padEnd(49)}║
 ║                                                            ║
-║   Welcome, Hacker.                                         ║
+║   Welcome to the terminal.                                 ║
 ║   Type 'help' to see available commands.                  ║
 ║   Type 'missions' to see available missions.               ║
 ║                                                            ║
