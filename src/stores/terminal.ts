@@ -151,6 +151,7 @@ export const useTerminalStore = defineStore('terminal', () => {
    * @returns 欢迎信息字符串
    */
   function getWelcomeMessage(): string {
+    const version = '0.1.0'
     return `
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
@@ -160,7 +161,7 @@ export const useTerminalStore = defineStore('terminal', () => {
 ║   ╚██╗ ██╔╝██║██║  ██║██║  ██║██╔══██║██║  ██║             ║
 ║    ╚████╔╝ ██║██████╔╝██████╔╝██║  ██║██████╔╝             ║
 ║     ╚═══╝  ╚═╝╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝              ║
-║                  Simulator v${require('../../package.json').version}                        ║
+║                  Simulator v${version.padEnd(46)}║
 ║                                                            ║
 ║   Welcome, Hacker.                                         ║
 ║   Type 'help' to see available commands.                  ║
