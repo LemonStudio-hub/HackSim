@@ -9,7 +9,6 @@
         type="text"
         class="terminal-input"
         @keydown="handleKeyDown"
-        @input="handleInput"
         placeholder="Enter command..."
         autocomplete="off"
         spellcheck="false"
@@ -133,31 +132,6 @@ function showWelcomeMessage() {
 }
 
 /**
- * 处理输入
- */
-async function handleInput() {
-  if (!inputRef.value) return
-
-  const command = inputValue.value.trim()
-
-  if (command) {
-    // 显示输入的命令
-    terminal?.writeln(`> ${command}`)
-
-    // 执行命令
-    await executeCommand(command)
-  }
-
-  // 清空输入
-  inputValue.value = ''
-
-  // 滚动到底部
-  nextTick(() => {
-    terminal?.scrollToBottom()
-  })
-}
-
-/**
  * 执行命令
  */
 async function executeCommand(input: string) {
@@ -194,7 +168,24 @@ async function executeCommand(input: string) {
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
     event.preventDefault()
-    handleInput()
+    
+    const command = inputValue.value.trim()
+    
+    if (command) {
+      // 显示输入的命令
+      terminal?.writeln(`> ${command}`)
+      
+      // 执行命令
+      executeCommand(command)
+    }
+    
+    // 清空输入
+    inputValue.value = ''
+    
+    // 滚动到底部
+    nextTick(() => {
+      terminal?.scrollToBottom()
+    })
   }
 }
 
