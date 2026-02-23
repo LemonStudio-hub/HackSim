@@ -1,0 +1,132 @@
+/**
+ * SCSS 变量定义
+ * 包含颜色、字体、间距等设计系统变量
+ */
+
+// ========== 颜色系统 ==========
+
+// 主色调（黑客风格）
+$primary: #00ff41;
+$primary-dark: #008f11;
+$primary-light: #00ff9d;
+
+// 背景色
+$bg-dark: #0d0208;
+$bg-darker: #000000;
+$bg-card: #1a1a1a;
+$bg-hover: #2a2a2a;
+
+// 文字颜色
+$text-primary: #e0e0e0;
+$text-secondary: #a0a0a0;
+$text-muted: #666666;
+$text-disabled: #444444;
+
+// 边框颜色
+$border-color: #00ff4155;
+$border-light: #333333;
+
+// 功能色
+$success: #00ff41;
+$error: #ff4141;
+$warning: #ffcc00;
+$info: #00aaff;
+
+// 阴影
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+$shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+$shadow-glow: 0 0 10px rgba(0, 255, 65, 0.3);
+
+// ========== 字体系统 ==========
+
+// 字体族
+$font-family-mono: 'Courier New', 'Courier', monospace;
+$font-family-sans: 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+
+// 字体大小
+$font-size-xs: 12px;
+$font-size-sm: 14px;
+$font-size-base: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 30px;
+
+// 字体粗细
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// 行高
+$line-height-tight: 1.2;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.8;
+
+// ========== 间距系统 ==========
+
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-2xl: 48px;
+$spacing-3xl: 64px;
+
+// ========== 圆角 ==========
+
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-full: 9999px;
+
+// ========== 过渡 ==========
+
+$transition-fast: 150ms;
+$transition-base: 250ms;
+$transition-slow: 350ms;
+
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+// ========== Z-index ==========
+
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;
+
+// ========== 组件 ==========
+
+// 按钮
+$button-height-sm: 32px;
+$button-height-md: 40px;
+$button-height-lg: 48px;
+
+// 输入框
+$input-height-sm: 32px;
+$input-height-md: 40px;
+$input-height-lg: 48px;
+
+// 卡片
+$card-padding: 20px;
+$card-border-radius: 8px;
+
+// 终端
+$terminal-font-size: 14px;
+$terminal-line-height: 1.6;
+$terminal-padding: 16px;
+
+// ========== 断点 ==========
+
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;

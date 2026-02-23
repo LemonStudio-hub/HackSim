@@ -1,0 +1,233 @@
+/**
+ * 主样式文件
+ * 导入所有样式模块
+ */
+
+@import './variables.scss';
+
+// ========== 全局样式 ==========
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  // 颜色变量
+  --primary: #{$primary};
+  --primary-dark: #{$primary-dark};
+  --primary-light: #{$primary-light};
+  --bg-dark: #{$bg-dark};
+  --bg-darker: #{$bg-darker};
+  --bg-card: #{$bg-card};
+  --bg-hover: #{$bg-hover};
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-muted: #{$text-muted};
+  --text-disabled: #{$text-disabled};
+  --border-color: #{$border-color};
+  --border-light: #{$border-light};
+  --success: #{$success};
+  --error: #{$error};
+  --warning: #{$warning};
+  --info: #{$info};
+
+  // 字体变量
+  --font-family-mono: #{$font-family-mono};
+  --font-family-sans: #{$font-family-sans};
+
+  // 间距变量
+  --spacing-xs: #{$spacing-xs};
+  --spacing-sm: #{$spacing-sm};
+  --spacing-md: #{$spacing-md};
+  --spacing-lg: #{$spacing-lg};
+  --spacing-xl: #{$spacing-xl};
+
+  // 圆角变量
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-xl: #{$radius-xl};
+
+  // 阴影变量
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-glow: #{$shadow-glow};
+
+  // 过渡变量
+  --transition-fast: #{$transition-fast}ms;
+  --transition-base: #{$transition-base}ms;
+  --transition-slow: #{$transition-slow}ms;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-darker);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// ========== 滚动条样式 ==========
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-dark);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--primary);
+  }
+}
+
+// ========== 工具类 ==========
+
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-info {
+  color: var(--info);
+}
+
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.bg-dark {
+  background-color: var(--bg-dark);
+}
+
+.bg-darker {
+  background-color: var(--bg-darker);
+}
+
+.border-primary {
+  border-color: var(--border-color);
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.rounded-sm {
+  border-radius: var(--radius-sm);
+}
+
+.rounded-md {
+  border-radius: var(--radius-md);
+}
+
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+.rounded-xl {
+  border-radius: var(--radius-xl);
+}
+
+.rounded-full {
+  border-radius: var(--radius-full);
+}
+
+// ========== 动画 ==========
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+// ========== 响应式 ==========
+
+@media (max-width: $breakpoint-md) {
+  body {
+    font-size: $font-size-sm;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  body {
+    font-size: $font-size-xs;
+  }
+}
