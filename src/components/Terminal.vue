@@ -28,14 +28,41 @@ let terminal: Terminal | null = null
 let fitAddon: FitAddon | null = null
 let commandRegistry: CommandRegistry | null = null
 let currentLine = ''
+let cursorPosition = 0
 let commandHistory: string[] = []
 let historyIndex = -1
+
+/**
+ * 重绘当前输入行
+ */
+function redrawLine() {
+  if (!terminal) return
+  
+  // 回到行首
+  terminal.write('\r')
+  // 清除从光标到行尾
+  terminal.write('\x1b[K')
+  // 显示提示符
+  terminal.write('\x1b[32m>\x1b[0m ')
+  // 显示当前行内容
+  terminal.write(currentLine)
+  // 移动光标到正确位置
+  const moveBack = currentLine.length - cursorPosition
+  if (moveBack > 0) {
+    terminal.write(`\x1b[${moveBack}D`)
+  }
+  // 确保光标可见
+  terminal.write('\x1b[?25h')
+}
 
 /**
  * 显示提示符
  */
 function showPrompt() {
   if (!terminal) return
+  // 回到行首并清除当前行
+  terminal.write('\r\x1b[K')
+  // 显示提示符
   terminal.write('\x1b[32m>\x1b[0m ')
   // 滚动到底部
   scrollToBottom()
@@ -71,8 +98,10 @@ function initTerminal() {
     },
     cursorBlink: true,
     cursorStyle: 'block',
+    cursorInactiveStyle: 'none',
     scrollback: 1000,
     tabStopWidth: 4,
+    disableStdin: false,
   })
 
   // 创建自适应插件
@@ -155,9 +184,10 @@ function showWelcomeMessage() {
 function handleTerminalInput(data: string) {
   if (!terminal) return
 
-  // 处理特殊字符
+  const charCode = data.charCodeAt(0)
+
+  // 处理回车键
   if (data === '\r') {
-    // 回车键 - 执行命令
     terminal.writeln('')
     if (currentLine.trim()) {
       // 添加到历史记录
@@ -172,16 +202,22 @@ function handleTerminalInput(data: string) {
       showPrompt()
     }
     currentLine = ''
-  } else if (data === '\u007F') {
-    // Backspace
-    if (currentLine.length > 0) {
-      currentLine = currentLine.slice(0, -1)
-      terminal.write('\b \b')
+    cursorPosition = 0
+  }
+  // 处理退格键
+  else if (data === '\u007F' || data === '\b') {
+    if (cursorPosition > 0) {
+      currentLine = currentLine.slice(0, cursorPosition - 1) + currentLine.slice(cursorPosition)
+      cursorPosition--
+      redrawLine()
     }
-  } else if (data.charCodeAt(0) >= 32) {
-    // 可打印字符
-    currentLine += data
-    terminal.write(data)
+  }
+  // 处理可打印字符
+  else if (charCode >= 32 && charCode <= 126) {
+    // 在光标位置插入字符
+    currentLine = currentLine.slice(0, cursorPosition) + data + currentLine.slice(cursorPosition)
+    cursorPosition++
+    redrawLine()
   }
 }
 
@@ -191,39 +227,67 @@ function handleTerminalInput(data: string) {
 function handleKeyInput(event: { key: string; domEvent: KeyboardEvent }) {
   if (!terminal) return
 
-  if (event.domEvent.key === 'ArrowUp') {
+  const key = event.domEvent.key
+
+  // 左箭头 - 向左移动光标
+  if (key === 'ArrowLeft') {
+    event.domEvent.preventDefault()
+    if (cursorPosition > 0) {
+      cursorPosition--
+      redrawLine()
+    }
+  }
+  // 右箭头 - 向右移动光标
+  else if (key === 'ArrowRight') {
+    event.domEvent.preventDefault()
+    if (cursorPosition < currentLine.length) {
+      cursorPosition++
+      redrawLine()
+    }
+  }
+  // 上箭头 - 浏览历史记录
+  else if (key === 'ArrowUp') {
     event.domEvent.preventDefault()
     if (historyIndex > 0) {
-      // 清除当前行
-      while (currentLine.length > 0) {
-        terminal.write('\b \b')
-        currentLine = currentLine.slice(0, -1)
-      }
-      // 显示上一条命令
       historyIndex--
       currentLine = commandHistory[historyIndex]
-      terminal.write(currentLine)
+      cursorPosition = currentLine.length
+      redrawLine()
     }
-  } else if (event.domEvent.key === 'ArrowDown') {
+  }
+  // 下箭头 - 浏览历史记录
+  else if (key === 'ArrowDown') {
     event.domEvent.preventDefault()
     if (historyIndex < commandHistory.length - 1) {
-      // 清除当前行
-      while (currentLine.length > 0) {
-        terminal.write('\b \b')
-        currentLine = currentLine.slice(0, -1)
-      }
-      // 显示下一条命令
       historyIndex++
       currentLine = commandHistory[historyIndex]
-      terminal.write(currentLine)
+      cursorPosition = currentLine.length
+      redrawLine()
     } else if (historyIndex === commandHistory.length - 1) {
-      // 清除当前行
-      while (currentLine.length > 0) {
-        terminal.write('\b \b')
-        currentLine = currentLine.slice(0, -1)
-      }
       historyIndex = commandHistory.length
       currentLine = ''
+      cursorPosition = 0
+      redrawLine()
+    }
+  }
+  // Home 键 - 移动到行首
+  else if (key === 'Home') {
+    event.domEvent.preventDefault()
+    cursorPosition = 0
+    redrawLine()
+  }
+  // End 键 - 移动到行尾
+  else if (key === 'End') {
+    event.domEvent.preventDefault()
+    cursorPosition = currentLine.length
+    redrawLine()
+  }
+  // Delete 键 - 删除光标处的字符
+  else if (key === 'Delete') {
+    event.domEvent.preventDefault()
+    if (cursorPosition < currentLine.length) {
+      currentLine = currentLine.slice(0, cursorPosition) + currentLine.slice(cursorPosition + 1)
+      redrawLine()
     }
   }
 }
