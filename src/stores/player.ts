@@ -110,16 +110,26 @@ export const usePlayerStore = defineStore('player', () => {
    * @returns 格式化的玩家信息字符串
    */
   function getPlayerInfo(): string {
+    const lineLength = 60
+    const contentLength = lineLength - 2 // 去掉两边边框
+    
+    const nameLine = `  Name:     ${player.value.name}${' '.repeat(Math.max(0, contentLength - 11 - player.value.name.length))}`
+    const levelLine = `  Level:    ${player.value.level}${' '.repeat(Math.max(0, contentLength - 11 - player.value.level.toString().length))}`
+    const expProgress = `${player.value.exp}/${expToNextLevel.value} (${levelProgress.value}%)`
+    const expLine = `  EXP:      ${expProgress}${' '.repeat(Math.max(0, contentLength - 11 - expProgress.length))}`
+    const creditsLine = `  Credits:  ${player.value.credits}${' '.repeat(Math.max(0, contentLength - 11 - player.value.credits.toString().length))}`
+    const reputationLine = `  Reputation: ${player.value.reputation}${' '.repeat(Math.max(0, contentLength - 13 - player.value.reputation.toString().length))}`
+    
     return `
-╔══════════════════════════════════════╗
+╔════════════════════════════════════════════════════════════╗
 ║          PLAYER INFO                  ║
-╠══════════════════════════════════════╣
-║  Name:     ${player.value.name.padEnd(24)}║
-║  Level:    ${player.value.level.toString().padEnd(24)}║
-║  EXP:      ${player.value.exp}/${expToNextLevel.value} (${levelProgress.value}%)${' '.repeat(5 - levelProgress.value.toString().length)}║
-║  Credits:  ${player.value.credits}                          ║
-║  Reputation: ${player.value.reputation}                        ║
-╚══════════════════════════════════════╝
+╠════════════════════════════════════════════════════════════╣
+║${nameLine}║
+║${levelLine}║
+║${expLine}║
+║${creditsLine}║
+║${reputationLine}║
+╚════════════════════════════════════════════════════════════╝
     `.trim()
   }
 

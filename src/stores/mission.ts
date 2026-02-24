@@ -183,20 +183,30 @@ export const useMissionStore = defineStore('mission', () => {
       return null
     }
 
+    const lineLength = 60
+    const contentLength = lineLength - 2 // 去掉两边边框
+    
     const difficultyStars = '★'.repeat(mission.difficulty) + '☆'.repeat(5 - mission.difficulty)
+
+    const titleLine = `  MISSION: ${mission.title}${' '.repeat(Math.max(0, contentLength - 11 - mission.title.length))}`
+    const descLine = `  Description: ${mission.description}${' '.repeat(Math.max(0, contentLength - 14 - mission.description.length))}`
+    const targetLine = `  Target:      ${mission.target}${' '.repeat(Math.max(0, contentLength - 14 - mission.target.length))}`
+    const diffLine = `  Difficulty:  ${difficultyStars}${' '.repeat(Math.max(0, contentLength - 14 - difficultyStars.length))}`
+    const statusValue = mission.status.toUpperCase()
+    const statusLine = `  Status:      ${statusValue}${' '.repeat(Math.max(0, contentLength - 14 - statusValue.length))}`
 
     return `
 ╔════════════════════════════════════════════════════════════╗
-║  MISSION: ${mission.title.padEnd(46)}║
+║${titleLine}║
 ╠════════════════════════════════════════════════════════════╣
-║  Description: ${mission.description.padEnd(45)}║
-║  Target:      ${mission.target.padEnd(47)}║
-║  Difficulty:  ${difficultyStars.padEnd(47)}║
-║  Status:      ${mission.status.toUpperCase().padEnd(47)}║
+║${descLine}║
+║${targetLine}║
+║${diffLine}║
+║${statusLine}║
 ╠════════════════════════════════════════════════════════════╣
 ║  REWARDS:                                                   ║
-║  EXP:         ${mission.reward.exp}                                   ║
-║  Credits:     ${mission.reward.credits}                                   ║
+║  EXP:         ${mission.reward.exp}${' '.repeat(Math.max(0, contentLength - 16 - mission.reward.exp.toString().length))}║
+║  Credits:     ${mission.reward.credits}${' '.repeat(Math.max(0, contentLength - 16 - mission.reward.credits.toString().length))}║
 ╚════════════════════════════════════════════════════════════╝
     `.trim()
   }
@@ -210,18 +220,27 @@ export const useMissionStore = defineStore('mission', () => {
       return 'No missions available. Try again later.'
     }
 
+    const lineLength = 60
+    const contentLength = lineLength - 2
+
     let output = '\n╔════════════════════════════════════════════════════════════╗\n'
     output += '║              AVAILABLE MISSIONS                              ║\n'
     output += '╠════════════════════════════════════════════════════════════╣\n'
 
     if (active.value) {
       const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
-      output += `║ [ACTIVE] ${active.value.id.substring(0, 8)} - ${active.value.title.padEnd(30)} ${stars} ║\n`
+      const idPrefix = `[ACTIVE] ${active.value.id.substring(0, 8)} - `
+      const titlePart = `${active.value.title} ${stars}`
+      const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
+      output += `║${idPrefix}${titlePart}${' '.repeat(padding)}║\n`
     }
 
     available.value.forEach((mission, index) => {
       const stars = '★'.repeat(mission.difficulty) + '☆'.repeat(5 - mission.difficulty)
-      output += `║ [${(index + 1).toString().padStart(2)}] ${mission.id.substring(0, 8)} - ${mission.title.padEnd(30)} ${stars} ║\n`
+      const idPrefix = `[${(index + 1).toString().padStart(2)}] ${mission.id.substring(0, 8)} - `
+      const titlePart = `${mission.title} ${stars}`
+      const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
+      output += `║${idPrefix}${titlePart}${' '.repeat(padding)}║\n`
     })
 
     output += '╚════════════════════════════════════════════════════════════╝\n'
@@ -239,19 +258,31 @@ export const useMissionStore = defineStore('mission', () => {
       return 'No active mission. Use "missions" to see available missions.'
     }
 
+    const lineLength = 60
+    const contentLength = lineLength - 2
+    
     const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
+    
+    const titleLine = `  CURRENT MISSION${' '.repeat(Math.max(0, contentLength - 16))}`
+    const nameLine = `  Title:       ${active.value.title}${' '.repeat(Math.max(0, contentLength - 15 - active.value.title.length))}`
+    const targetLine = `  Target:      ${active.value.target}${' '.repeat(Math.max(0, contentLength - 15 - active.value.target.length))}`
+    const diffLine = `  Difficulty:  ${stars}${' '.repeat(Math.max(0, contentLength - 15 - stars.length))}`
+    const obj1Line = `  [ ] Scan target (${active.value.target})${' '.repeat(Math.max(0, contentLength - 17 - active.value.target.length))}`
+    const obj2Line = `  [ ] Connect to target${' '.repeat(Math.max(0, contentLength - 22))}`
+    const obj3Line = `  [ ] Hack target${' '.repeat(Math.max(0, contentLength - 16))}`
+
     return `
 ╔════════════════════════════════════════════════════════════╗
-║  CURRENT MISSION                                            ║
+║${titleLine}║
 ╠════════════════════════════════════════════════════════════╣
-║  Title:       ${active.value.title.padEnd(46)}║
-║  Target:      ${active.value.target.padEnd(46)}║
-║  Difficulty:  ${stars.padEnd(46)}║
+║${nameLine}║
+║${targetLine}║
+║${diffLine}║
 ╠════════════════════════════════════════════════════════════╣
 ║  OBJECTIVES:                                                ║
-║  [ ] Scan target (${active.value.target})${' '.repeat(20 - active.value.target.length)}║
-║  [ ] Connect to target${' '.repeat(28)}║
-║  [ ] Hack target${' '.repeat(33)}║
+║${obj1Line}║
+║${obj2Line}║
+║${obj3Line}║
 ╚════════════════════════════════════════════════════════════╝
     `.trim()
   }

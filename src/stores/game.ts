@@ -125,14 +125,25 @@ export const useGameStore = defineStore('game', () => {
    * @returns 游戏信息字符串
    */
   function getGameInfo(): string {
+    const lineLength = 60
+    const contentLength = lineLength - 2 // 去掉两边边框
+    
+    const nameLine = `  ${GAME_CONFIG.NAME}${' '.repeat(Math.max(0, contentLength - GAME_CONFIG.NAME.length))}`
+    const versionLine = `  Version ${GAME_CONFIG.VERSION}${' '.repeat(Math.max(0, contentLength - 8 - GAME_CONFIG.VERSION.length))}`
+    const statusValue = isRunning.value ? 'Running' : 'Paused'
+    const statusLine = `  Status:      ${statusValue}${' '.repeat(Math.max(0, contentLength - 13 - statusValue.length))}`
+    const initValue = isInitialized.value ? 'Yes' : 'No'
+    const initLine = `  Initialized: ${initValue}${' '.repeat(Math.max(0, contentLength - 14 - initValue.length))}`
+    const timeLine = `  Play Time:   ${formattedPlayTime.value}${' '.repeat(Math.max(0, contentLength - 13 - formattedPlayTime.value.length))}`
+    
     return `
 ╔════════════════════════════════════════════════════════════╗
-║          ${GAME_CONFIG.NAME.padEnd(52)}║
-║          Version ${GAME_CONFIG.VERSION.padEnd(48)}║
+║${nameLine}║
+║${versionLine}║
 ╠════════════════════════════════════════════════════════════╣
-║  Status:      ${isRunning.value ? 'Running' : 'Paused'.padEnd(46)}║
-║  Initialized: ${isInitialized.value ? 'Yes' : 'No'.padEnd(45)}║
-║  Play Time:   ${formattedPlayTime.value.padEnd(46)}║
+║${statusLine}║
+║${initLine}║
+║${timeLine}║
 ╚════════════════════════════════════════════════════════════╝
     `.trim()
   }
