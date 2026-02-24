@@ -152,10 +152,15 @@ export const useTerminalStore = defineStore('terminal', () => {
    */
   function getWelcomeMessage(): string {
     const version = '0.1.0'
+    const lineLength = 60
+    const contentLength = lineLength - 2 // 去掉两边边框
+    const prefix = '   HACKSIM v'
+    const versionPadding = contentLength - prefix.length - version.length
+    
     return `
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║   HACKSIM v${version.padEnd(49)}║
+║   HACKSIM v${version}${' '.repeat(Math.max(0, versionPadding))}║
 ║                                                            ║
 ║   Welcome to the terminal.                                 ║
 ║   Type 'help' to see available commands.                  ║

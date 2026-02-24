@@ -63,6 +63,13 @@ export const clearCommand: BaseCommand = {
   async execute(): Promise<string> {
     const terminalStore = useTerminalStore()
     terminalStore.clear()
+    
+    // 清空 xterm.js 终端显示
+    const terminal = terminalStore.terminalInstance
+    if (terminal) {
+      terminal.clear()
+    }
+    
     return ''
   },
 }
@@ -101,10 +108,16 @@ export const versionCommand: BaseCommand = {
   description: 'Show version information',
   usage: 'version',
   async execute(): Promise<string> {
+    const lineLength = 60
+    const contentLength = lineLength - 2 // 去掉两边边框
+    
+    const nameLine = `  ${GAME_CONFIG.NAME}${' '.repeat(Math.max(0, contentLength - GAME_CONFIG.NAME.length - 2))}`
+    const versionLine = `  Version ${GAME_CONFIG.VERSION}${' '.repeat(Math.max(0, contentLength - '  Version '.length - GAME_CONFIG.VERSION.length - 2))}`
+    
     return `
 ╔════════════════════════════════════════════════════════════╗
-║  ${GAME_CONFIG.NAME.padEnd(52)}║
-║  Version ${GAME_CONFIG.VERSION.padEnd(49)}║
+║${nameLine}║
+║${versionLine}║
 ╠════════════════════════════════════════════════════════════╣
 ║  A hacker simulator game built with Vue 3 + TypeScript     ║
 ║                                                              ║

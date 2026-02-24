@@ -232,9 +232,6 @@ function handleKeyInput(event: { key: string; domEvent: KeyboardEvent }) {
 async function executeCommand(input: string) {
   if (!commandRegistry || !terminal) return
 
-  // 显示执行的命令
-  terminal.writeln(`\x1b[32m>\x1b[0m ${input}`)
-
   // 解析命令和参数
   const parts = input.trim().split(/\s+/)
   const commandName = parts[0].toLowerCase()
