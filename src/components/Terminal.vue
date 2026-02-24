@@ -29,65 +29,86 @@ let fitAddon: FitAddon | null = null
 let commandRegistry: CommandRegistry | null = null
 let currentLine = ''
 let commandHistory: string[] = []
+let resizeTimer: number | null = null
+let isInitialized = false
 
 /**
  * 显示提示符
  */
 function showPrompt() {
   if (!terminal) return
-  terminal.write('\x1b[32m>\x1b[0m ')
+  try {
+    terminal.write('\x1b[32m>\x1b[0m ')
+  } catch (error) {
+    console.error('Failed to show prompt:', error)
+  }
 }
 
 /**
  * 初始化终端
  */
 function initTerminal() {
-  if (!terminalRef.value) return
+  if (!terminalRef.value || isInitialized) return
 
-  // 创建终端实例
-  terminal = new Terminal({
-    fontSize: 14,
-    fontFamily: '"Courier New", Courier, monospace',
-    theme: {
-      background: '#0d0208',
-      foreground: '#e0e0e0',
-      cursor: '#00ff41',
-      cursorAccent: '#0d0208',
-    },
-    cursorBlink: true,
-    cursorStyle: 'block',
-    scrollback: 1000,
-    tabStopWidth: 4,
-  })
+  try {
+    // 创建终端实例
+    terminal = new Terminal({
+      fontSize: 14,
+      fontFamily: '"Courier New", Courier, monospace',
+      theme: {
+        background: '#0d0208',
+        foreground: '#e0e0e0',
+        cursor: '#00ff41',
+        cursorAccent: '#0d0208',
+      },
+      cursorBlink: true,
+      cursorStyle: 'block',
+      scrollback: 1000,
+      tabStopWidth: 4,
+    })
 
-  // 创建自适应插件
-  fitAddon = new FitAddon()
-  terminal.loadAddon(fitAddon)
+    // 创建自适应插件
+    fitAddon = new FitAddon()
+    terminal.loadAddon(fitAddon)
 
-  // 挂载终端
-  terminal.open(terminalRef.value)
-  fitAddon.fit()
+    // 挂载终端
+    terminal.open(terminalRef.value)
+    
+    // 延迟执行fit，确保DOM已完全渲染
+    setTimeout(() => {
+      try {
+        fitAddon?.fit()
+      } catch (error) {
+        console.error('Failed to fit terminal:', error)
+      }
+    }, 100)
 
-  // 保存终端实例
-  terminalStore.setTerminalInstance(terminal)
+    // 保存终端实例
+    terminalStore.setTerminalInstance(terminal)
 
-  // 初始化命令注册表
-  initCommands()
+    // 初始化命令注册表
+    initCommands()
 
-  // 显示欢迎信息
-  showWelcomeMessage()
+    // 显示欢迎信息
+    showWelcomeMessage()
 
-  // 显示初始提示符
-  showPrompt()
+    // 显示初始提示符
+    showPrompt()
 
-  // 生成初始任务
-  missionStore.generateMissions(playerStore.player.level)
+    // 生成初始任务
+    missionStore.generateMissions(playerStore.player.level)
 
-  // 初始化游戏
-  gameStore.initialize()
+    // 初始化游戏
+    gameStore.initialize()
 
-  // 添加键盘输入监听
-  terminal.onData(handleTerminalInput)
+    // 添加键盘输入监听
+    terminal.onData(handleTerminalInput)
+
+    isInitialized = true
+  } catch (error) {
+    console.error('Failed to initialize terminal:', error)
+    isInitialized = false
+  }
 }
 
 /**
@@ -119,18 +140,14 @@ function initCommands() {
  */
 function showWelcomeMessage() {
   if (!terminal) return
-
-  const welcomeMessage = terminalStore.getWelcomeMessage()
-  terminal.writeln(welcomeMessage)
-  terminal.writeln('')
   
-  // 显示引导提示
-  terminal.writeln('提示：输入 help 命令查看所有可用命令')
-  terminal.writeln('')
-  terminal.writeln('提示：输入 missions 命令查看可用任务')
-  terminal.writeln('')
-  terminal.writeln('─────────────────────────────────────────────────────────')
-  terminal.writeln('')
+  try {
+    // 只显示简单的提示
+    terminal.writeln('提示：输入 help 命令查看所有可用命令')
+    terminal.writeln('')
+  } catch (error) {
+    console.error('Failed to show welcome message:', error)
+  }
 }
 
 /**
@@ -139,38 +156,42 @@ function showWelcomeMessage() {
 function handleTerminalInput(data: string) {
   if (!terminal) return
 
-  // 处理回车键
-  if (data === '\r') {
-    terminal.writeln('')
-    
-    if (currentLine.trim()) {
-      // 添加到历史记录
-      commandHistory.push(currentLine)
+  try {
+    // 处理回车键
+    if (data === '\r') {
+      terminal.writeln('')
       
-      // 显示执行的命令
-      terminal.writeln(`\x1b[32m>\x1b[0m ${currentLine}`)
+      if (currentLine.trim()) {
+        // 添加到历史记录
+        commandHistory.push(currentLine)
+        
+        // 显示执行的命令
+        terminal.writeln(`\x1b[32m>\x1b[0m ${currentLine}`)
+        
+        // 执行命令
+        executeCommand(currentLine)
+      } else {
+        // 空行 - 显示新提示符
+        showPrompt()
+      }
       
-      // 执行命令
-      executeCommand(currentLine)
-    } else {
-      // 空行 - 显示新提示符
-      showPrompt()
+      currentLine = ''
     }
-    
-    currentLine = ''
-  }
-  // 处理退格键
-  else if (data === '\u007F' || data === '\b') {
-    if (currentLine.length > 0) {
-      currentLine = currentLine.slice(0, -1)
-      // 让xterm.js处理退格的显示
-      terminal.write('\b \b')
+    // 处理退格键
+    else if (data === '\u007F' || data === '\b') {
+      if (currentLine.length > 0) {
+        currentLine = currentLine.slice(0, -1)
+        // 让xterm.js处理退格的显示
+        terminal.write('\b \b')
+      }
     }
-  }
-  // 处理可打印字符 - 让xterm.js处理显示
-  else if (data.charCodeAt(0) >= 32) {
-    currentLine += data
-    terminal.write(data)
+    // 处理可打印字符 - 让xterm.js处理显示
+    else if (data.charCodeAt(0) >= 32) {
+      currentLine += data
+      terminal.write(data)
+    }
+  } catch (error) {
+    console.error('Error handling terminal input:', error)
   }
 }
 
@@ -180,25 +201,25 @@ function handleTerminalInput(data: string) {
 async function executeCommand(input: string) {
   if (!commandRegistry || !terminal) return
 
-  // 解析命令和参数
-  const parts = input.trim().split(/\s+/)
-  const commandName = parts[0].toLowerCase()
-  const args = parts.slice(1)
-
-  // 获取命令
-  const command = commandRegistry.get(commandName)
-
-  if (!command) {
-    terminal?.writeln(`Error: Command not found: ${commandName}`)
-    terminal?.writeln(`Type 'help' to see available commands.`)
-    // 输出提示符
-    terminal?.writeln('')
-    showPrompt()
-    return
-  }
-
-  // 执行命令
   try {
+    // 解析命令和参数
+    const parts = input.trim().split(/\s+/)
+    const commandName = parts[0].toLowerCase()
+    const args = parts.slice(1)
+
+    // 获取命令
+    const command = commandRegistry.get(commandName)
+
+    if (!command) {
+      terminal?.writeln(`Error: Command not found: ${commandName}`)
+      terminal?.writeln(`Type 'help' to see available commands.`)
+      // 输出提示符
+      terminal?.writeln('')
+      showPrompt()
+      return
+    }
+
+    // 执行命令
     const output = await (command as any).execute(args)
     
     // 处理特殊命令
@@ -212,10 +233,14 @@ async function executeCommand(input: string) {
     terminal?.writeln('')
     showPrompt()
   } catch (error) {
-    terminal?.writeln(`Error: ${error}`)
-    // 输出提示符
-    terminal?.writeln('')
-    showPrompt()
+    try {
+      terminal?.writeln(`Error: ${error}`)
+      // 输出提示符
+      terminal?.writeln('')
+      showPrompt()
+    } catch (writeError) {
+      console.error('Failed to write error to terminal:', writeError)
+    }
   }
 }
 
@@ -223,7 +248,19 @@ async function executeCommand(input: string) {
  * 窗口大小变化时重新适配
  */
 function handleResize() {
-  fitAddon?.fit()
+  // 防抖处理
+  if (resizeTimer !== null) {
+    clearTimeout(resizeTimer)
+  }
+  
+  resizeTimer = window.setTimeout(() => {
+    try {
+      fitAddon?.fit()
+    } catch (error) {
+      console.error('Failed to fit terminal on resize:', error)
+    }
+    resizeTimer = null
+  }, 250)
 }
 
 onMounted(() => {
@@ -232,8 +269,25 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 清理resize定时器
+  if (resizeTimer !== null) {
+    clearTimeout(resizeTimer)
+    resizeTimer = null
+  }
+  
   window.removeEventListener('resize', handleResize)
-  terminal?.dispose()
+  
+  // 安全清理终端
+  if (terminal) {
+    try {
+      terminal.dispose()
+    } catch (error) {
+      console.error('Failed to dispose terminal:', error)
+    }
+    terminal = null
+  }
+  
+  isInitialized = false
 })
 </script>
 
@@ -252,6 +306,9 @@ onUnmounted(() => {
   flex: 1;
   padding: var(--spacing-md);
   // 移除 overflow: auto，让 xterm.js 自己管理滚动
+  // 添加触摸优化
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 
   // 移动端优化
   @media (max-width: 640px) {
@@ -273,6 +330,9 @@ onUnmounted(() => {
 :deep(.xterm-viewport) {
   scrollbar-width: thin;
   scrollbar-color: var(--primary-dark) var(--bg-dark);
+  // 移动端优化
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 :deep(.xterm-viewport::-webkit-scrollbar) {
