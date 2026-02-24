@@ -74,7 +74,8 @@ function formatTerminal() {
 function showPrompt() {
   if (!terminal) return
   try {
-    terminal.write('\x1b[32m>\x1b[0m ')
+    // 使用亮黄色，更加明显
+    terminal.write('\x1b[93m$\x1b[0m ')
   } catch (error) {
     console.error('Failed to show prompt:', error)
   }
@@ -96,7 +97,7 @@ function initTerminal() {
         foreground: '#e0e0e0',
         cursor: '#00ff41',
       },
-      cursorBlink: false,
+      cursorBlink: true,
       cursorStyle: 'underline',
       scrollback: 1000,
       tabStopWidth: 4,
@@ -110,7 +111,7 @@ function initTerminal() {
     terminal.open(terminalRef.value)
     
     // 延迟执行fit，确保DOM已完全渲染
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         if (!terminal || !fitAddon) {
           console.error('Terminal or fitAddon not initialized')
@@ -122,8 +123,10 @@ function initTerminal() {
         // fit完成后，执行终端格式化操作
         formatTerminal()
         
-        // 然后输出欢迎信息和提示符
-        showWelcomeMessage()
+        // 然后输出开机动画
+        await showBootSequence()
+        
+        // 显示初始提示符
         showPrompt()
         
         // 生成初始任务
@@ -177,18 +180,50 @@ function initCommands() {
 }
 
 /**
- * 显示欢迎信息
+ * 显示开机日志动画
  */
-function showWelcomeMessage() {
+async function showBootSequence() {
   if (!terminal) return
   
   try {
-    // 只显示简单的提示
-    terminal.writeln('Tip: Type "help" to see all available commands')
-    terminal.writeln('')
+    const bootLogs = [
+      { text: 'Initializing HackSim OS v0.1.0...', color: '36' }, // Cyan
+      { text: 'Loading kernel modules...', color: '36' },
+      { text: 'Mounting virtual filesystem...', color: '36' },
+      { text: 'Starting network services...', color: '36' },
+      { text: 'Establishing secure connection...', color: '36' },
+      { text: 'Loading user profile...', color: '36' },
+      { text: 'Initializing terminal interface...', color: '36' },
+      { text: 'Loading command modules...', color: '36' },
+      { text: 'Starting mission system...', color: '36' },
+      { text: 'Syncing with global network...', color: '36' },
+      { text: 'Loading player statistics...', color: '36' },
+      { text: 'Initializing security protocols...', color: '36' },
+      { text: 'System ready.', color: '32' }, // Green
+      { text: '', color: '' },
+      { text: 'Welcome to HackSim Terminal', color: '93' }, // Bright Yellow
+      { text: 'Type "help" to see available commands', color: '90' }, // Bright Black/Gray
+      { text: '', color: '' },
+    ]
+
+    for (const log of bootLogs) {
+      if (log.color) {
+        terminal.writeln(`\x1b[${log.color}m${log.text}\x1b[0m`)
+      } else {
+        terminal.writeln(log.text)
+      }
+      await sleep(50) // 每行延迟50ms
+    }
   } catch (error) {
-    console.error('Failed to show welcome message:', error)
+    console.error('Failed to show boot sequence:', error)
   }
+}
+
+/**
+ * 延迟函数
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
@@ -207,7 +242,7 @@ function handleTerminalInput(data: string) {
         commandHistory.push(currentLine)
         
         // 显示执行的命令
-        terminal.writeln(`\x1b[32m>\x1b[0m ${currentLine}`)
+        terminal.writeln(`\x1b[93m$\x1b[0m ${currentLine}`)
         
         // 执行命令
         executeCommand(currentLine)
