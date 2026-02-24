@@ -27,7 +27,8 @@ const TERMINAL_CONFIG = {
   FONT_FAMILY: '"Courier New", Courier, monospace',
   BACKGROUND: '#0d0208',
   FOREGROUND: '#e0e0e0',
-  CURSOR: '#00ff41',
+  CURSOR: '#00ff00', // 亮绿色光标，更明显
+  CURSOR_STYLE: 'bar', // 竖线光标，更容易定位
   SCROLLBACK: 1000,
 } as const
 
@@ -331,10 +332,12 @@ function createTerminal(): void {
       background: TERMINAL_CONFIG.BACKGROUND,
       foreground: TERMINAL_CONFIG.FOREGROUND,
       cursor: TERMINAL_CONFIG.CURSOR,
+      cursorAccent: '#ffffff', // 光标辅助色
     },
     cursorBlink: true,
-    cursorStyle: 'block',
+    cursorStyle: TERMINAL_CONFIG.CURSOR_STYLE as 'block' | 'underline' | 'bar',
     scrollback: TERMINAL_CONFIG.SCROLLBACK,
+    cursorWidth: 2, // 光标宽度
   })
 
   fitAddon = new FitAddon()
@@ -347,31 +350,75 @@ function createTerminal(): void {
 async function showBootSequence(): Promise<void> {
   if (!terminal) return
 
-  const messages = [
-    'Initializing HackSim OS v0.1.0...',
-    'Loading system modules...',
-    'Starting services...',
-    'Establishing connections...',
-    'System ready.',
-    '',
-    'Welcome to HackSim Terminal',
-    "Type 'help' to see available commands",
-    '',
+  const bootMessages = [
+    { text: '[BOOT] Starting HackSim OS v0.1.0...', color: '36', delay: 30 },
+    { text: '[SYSTEM] Detecting hardware configuration...', color: '36', delay: 40 },
+    { text: '[SYSTEM] CPU: Quantum Processor @ 4.2GHz', color: '90', delay: 20 },
+    { text: '[SYSTEM] RAM: 32TB Quantum Memory', color: '90', delay: 20 },
+    { text: '[SYSTEM] Storage: Neural Drive - ONLINE', color: '90', delay: 20 },
+    { text: '[KERNEL] Loading kernel modules...', color: '36', delay: 50 },
+    { text: '[KERNEL] Network stack initialized', color: '90', delay: 20 },
+    { text: '[KERNEL] File system mounted', color: '90', delay: 20 },
+    { text: '[KERNEL] Security protocols loaded', color: '90', delay: 20 },
+    { text: '[NETWORK] Establishing secure connections...', color: '36', delay: 60 },
+    { text: '[NETWORK] Connection established to: 192.168.1.100', color: '90', delay: 30 },
+    { text: '[NETWORK] Encryption: AES-256-GCM', color: '90', delay: 20 },
+    { text: '[NETWORK] Tunnel active: Secure', color: '90', delay: 20 },
+    { text: '[SERVICES] Loading system services...', color: '36', delay: 50 },
+    { text: '[SERVICES] Daemon: hacknetd - STARTED', color: '90', delay: 25 },
+    { text: '[SERVICES] Daemon: missiond - STARTED', color: '90', delay: 25 },
+    { text: '[SERVICES] Daemon: loggerd - STARTED', color: '90', delay: 25 },
+    { text: '[SERVICES] Daemon: terminald - STARTED', color: '90', delay: 25 },
+    { text: '[INTERFACE] Initializing terminal interface...', color: '36', delay: 50 },
+    { text: '[INTERFACE] Display: 1080p High-DPI', color: '90', delay: 20 },
+    { text: '[INTERFACE] Color mode: Full RGB', color: '90', delay: 20 },
+    { text: '[INTERFACE] Font: Hack Nerd Font', color: '90', delay: 20 },
+    { text: '[MODULES] Loading command modules...', color: '36', delay: 50 },
+    { text: '[MODULES] Loaded: basic commands (5)', color: '90', delay: 20 },
+    { text: '[MODULES] Loaded: hacking commands (3)', color: '90', delay: 20 },
+    { text: '[MODULES] Loaded: mission commands (3)', color: '90', delay: 20 },
+    { text: '[MISSION] Initializing mission system...', color: '36', delay: 50 },
+    { text: '[MISSION] Connecting to global network...', color: '90', delay: 30 },
+    { text: '[MISSION] Syncing with mission database...', color: '90', delay: 40 },
+    { text: '[MISSION] Database synchronized', color: '90', delay: 20 },
+    { text: '[PLAYER] Loading player profile...', color: '36', delay: 40 },
+    { text: '[PLAYER] Profile: Anonymous', color: '90', delay: 20 },
+    { text: '[PLAYER] Level: 1', color: '90', delay: 20 },
+    { text: '[PLAYER] Reputation: 0', color: '90', delay: 20 },
+    { text: '[PLAYER] Credits: 1000', color: '90', delay: 20 },
+    { text: '[SECURITY] Initializing security protocols...', color: '36', delay: 50 },
+    { text: '[SECURITY] Firewall: ACTIVE', color: '90', delay: 20 },
+    { text: '[SECURITY] Intrusion detection: ENABLED', color: '90', delay: 20 },
+    { text: '[SECURITY] Encryption keys: ROTATED', color: '90', delay: 20 },
+    { text: '[SECURITY] Anonymity layer: ACTIVE', color: '90', delay: 20 },
+    { text: '[SYSTEM] Running diagnostics...', color: '36', delay: 60 },
+    { text: '[SYSTEM] Memory integrity: OK', color: '32', delay: 20 },
+    { text: '[SYSTEM] Network connectivity: OK', color: '32', delay: 20 },
+    { text: '[SYSTEM] Security status: OK', color: '32', delay: 20 },
+    { text: '[SYSTEM] All systems operational', color: '32', delay: 30 },
+    { text: '', color: '', delay: 0 },
+    { text: '========================================', color: '90', delay: 0 },
+    { text: '     HackSim Terminal v0.1.0', color: '93', delay: 0 },
+    { text: '========================================', color: '90', delay: 0 },
+    { text: '', color: '', delay: 0 },
+    { text: 'System ready. Welcome, hacker.', color: '32', delay: 30 },
+    { text: '', color: '', delay: 0 },
+    { text: 'Quick Start:', color: '36', delay: 20 },
+    { text: '  Type "help"      - See all available commands', color: '90', delay: 20 },
+    { text: '  Type "missions"  - View available missions', color: '90', delay: 20 },
+    { text: '  Type "info"      - Check your stats', color: '90', delay: 20 },
+    { text: '', color: '', delay: 0 },
   ]
 
-  for (const msg of messages) {
-    if (msg.startsWith('System ready.')) {
-      writeColored(msg, TERMINAL_CONFIG.SUCCESS_COLOR)
-    } else if (msg.startsWith('Welcome')) {
-      writeColored(msg, TERMINAL_CONFIG.PROMPT_COLOR)
-    } else if (msg.startsWith("Type")) {
-      writeColored(msg, TERMINAL_CONFIG.COMMAND_COLOR)
-    } else {
-      writeColored(msg, '36')
+  for (const msg of bootMessages) {
+    if (msg.text) {
+      writeColored(msg.text, msg.color)
+      writeln()
     }
-    writeln()
     scrollToBottom()
-    await delay(50)
+    if (msg.delay > 0) {
+      await delay(msg.delay)
+    }
   }
 }
 
