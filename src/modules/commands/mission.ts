@@ -5,6 +5,15 @@
 
 import type { BaseCommand } from './registry'
 import { useMissionStore } from '../../stores/mission'
+import {
+  drawBorder,
+  drawTitle,
+  drawSeparator,
+  drawKeyValue,
+  drawSuccess,
+  drawError,
+  drawListItem,
+} from '../../utils/format'
 
 /**
  * Missions 命令 - 显示可用任务
@@ -42,17 +51,16 @@ export const acceptCommand: BaseCommand = {
       const success = missionStore.acceptMission(mission.id)
 
       if (success) {
-        return `
-╔════════════════════════════════════════════════════════════╗
-║  MISSION ACCEPTED                                          ║
-╠════════════════════════════════════════════════════════════╣
-║  Title:    ${mission.title.padEnd(46)}║
-║  Target:   ${mission.target.padEnd(46)}║
-║  Reward:   ${mission.reward.exp} EXP, ${mission.reward.credits} Credits${' '.repeat(8 - mission.reward.exp.toString().length)}║
-║                                                              ║
-║  Use 'status' to view mission objectives.                   ║
-╚════════════════════════════════════════════════════════════╝
-        `.trim()
+        const content: string[] = []
+        content.push(drawTitle('MISSION ACCEPTED', 2))
+        content.push(drawSeparator())
+        content.push(drawKeyValue('Title', mission.title, 10))
+        content.push(drawKeyValue('Target', mission.target, 10))
+        content.push(drawKeyValue('Reward', `${mission.reward.exp} EXP, ${mission.reward.credits} Credits`, 10))
+        content.push(drawSeparator())
+        content.push(drawListItem('Next:', 'Use "status" to view mission objectives'))
+        
+        return drawBorder(content)
       }
     }
 
@@ -60,10 +68,10 @@ export const acceptCommand: BaseCommand = {
     const success = missionStore.acceptMission(identifier)
 
     if (success) {
-      return 'Mission accepted successfully!\nUse "status" to view mission objectives.'
+      return drawSuccess('Mission accepted successfully!') + '\nUse "status" to view mission objectives.'
     }
 
-    return `Error: Mission "${identifier}" not found.\n\nUse "missions" to see available missions.`
+    return drawError(`Mission "${identifier}" not found.`) + '\n\nUse "missions" to see available missions.'
   },
 }
 

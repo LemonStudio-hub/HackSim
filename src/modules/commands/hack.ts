@@ -9,6 +9,15 @@ import { useMissionStore } from '../../stores/mission'
 import { usePlayerStore } from '../../stores/player'
 import { NETWORK_CONFIG, THEME } from '../../constants/game'
 import { sleep, isValidIP } from '../../utils/helpers'
+import {
+  drawBorder,
+  drawTitle,
+  drawSeparator,
+  drawKeyValue,
+  drawSuccess,
+  drawError,
+  drawListItem,
+} from '../../utils/format'
 
 /**
  * 扫描网络节点信息
@@ -101,26 +110,23 @@ export const scanCommand: BaseCommand = {
     // 执行扫描
     const result = scanTarget(target)
 
-    return `
-╔════════════════════════════════════════════════════════════╗
-║  SCAN RESULTS FOR: ${target.padEnd(37)}║
-╠════════════════════════════════════════════════════════════╣
-║  Target Name:     ${result.name.padEnd(42)}║
-║  Target IP:       ${target.padEnd(42)}║
-║  Security Level:  ${'█'.repeat(result.security)}${'░'.repeat(5 - result.security)} (${result.security}/5)║
-╠════════════════════════════════════════════════════════════╣
-║  OPEN PORTS:                                                ║
-${result.ports.map((port, i) => {
-  return `║  Port ${port.toString().padEnd(6)} - ${result.services[i].padEnd(40)}║`
-}).join('\n')}
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    // 绘制扫描结果
+    const content: string[] = []
+    content.push(drawTitle('SCAN RESULTS FOR ' + target, 2))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Target Name', result.name, 15))
+    content.push(drawKeyValue('Target IP', target, 15))
+    content.push(drawKeyValue('Security Level', '█'.repeat(result.security) + '░'.repeat(5 - result.security) + ` (${result.security}/5)`, 15))
+    content.push(drawSeparator())
+    content.push(drawListItem('OPEN PORTS:', ''))
+    
+    result.ports.forEach((port, i) => {
+      content.push(drawListItem(`Port ${port}:`, result.services[i]))
+    })
+    
+    return drawBorder(content)
   },
 }
-
-/**
- * Connect 命令 - 连接目标
- */
 export const connectCommand: BaseCommand = {
   name: 'connect',
   description: 'Connect to a target system',
@@ -156,30 +162,33 @@ export const connectCommand: BaseCommand = {
     const isMissionTarget = missionStore.active?.target === target
 
     if (isMissionTarget) {
-      terminalStore.writeColored('Connection established!', THEME.SUCCESS)
-      return `
-╔════════════════════════════════════════════════════════════╗
-║  CONNECTED TO: ${target.padEnd(40)}║
-╠════════════════════════════════════════════════════════════╣
-║  Status:          Connected                               ║
-║  Connection Type: Secure                                  ║
-║  Latency:         ${Math.floor(Math.random() * 50 + 10)}ms                                     ║
-║                                                              ║
-║  Use 'hack ${target}' to initiate the attack.              ║
-╚════════════════════════════════════════════════════════════╝
-      `.trim()
+      terminalStore.writeColored(drawSuccess('Connection established!'), THEME.SUCCESS)
+      
+      const latency = Math.floor(Math.random() * 50 + 10)
+      
+      const content: string[] = []
+      content.push(drawTitle('CONNECTION ESTABLISHED', 2))
+      content.push(drawSeparator())
+      content.push(drawKeyValue('Target', target, 10))
+      content.push(drawKeyValue('Status', 'Connected', 10))
+      content.push(drawKeyValue('Type', 'Secure', 10))
+      content.push(drawKeyValue('Latency', `${latency}ms`, 10))
+      content.push(drawSeparator())
+      content.push(drawListItem('Next:', `Use 'hack ${target}' to initiate the attack`))
+      
+      return drawBorder(content)
     } else {
-      terminalStore.writeColored('Access denied!', THEME.ERROR)
-      return `
-╔════════════════════════════════════════════════════════════╗
-║  CONNECTION FAILED                                        ║
-╠════════════════════════════════════════════════════════════╣
-║  Target: ${target.padEnd(50)}║
-║  Error:  Access denied - Authorization required          ║
-║                                                              ║
-║  This target is not part of your current mission.         ║
-╚════════════════════════════════════════════════════════════╝
-      `.trim()
+      terminalStore.writeColored(drawError('Access denied!'), THEME.ERROR)
+      
+      const content: string[] = []
+      content.push(drawTitle('CONNECTION FAILED', 2))
+      content.push(drawSeparator())
+      content.push(drawKeyValue('Target', target, 10))
+      content.push(drawKeyValue('Error', 'Access denied - Authorization required', 10))
+      content.push(drawSeparator())
+      content.push(drawListItem('Note:', 'This target is not part of your current mission'))
+      
+      return drawBorder(content)
     }
   },
 }
@@ -212,12 +221,12 @@ export const hackCommand: BaseCommand = {
 
     // 检查是否有活跃任务
     if (!missionStore.active) {
-      return 'Error: No active mission. Use "missions" to see available missions.'
+      return drawError('No active mission.') + '\nUse "missions" to see available missions.'
     }
 
     // 检查是否是任务目标
     if (missionStore.active.target !== target) {
-      return `Error: Target ${target} is not your current mission target.`
+      return drawError(`Target ${target} is not your current mission target.`)
     }
 
     // 模拟入侵过程
@@ -238,7 +247,7 @@ export const hackCommand: BaseCommand = {
     await sleep(400)
 
     // 任务成功
-    terminalStore.writeColored('Attack successful!', THEME.SUCCESS)
+    terminalStore.writeColored(drawSuccess('Attack successful!'), THEME.SUCCESS)
 
     // 完成任务并获取奖励
     const reward = missionStore.completeMission()
@@ -248,25 +257,27 @@ export const hackCommand: BaseCommand = {
       playerStore.addCredits(reward.credits)
       playerStore.addReputation(1)
 
-      return `
-╔════════════════════════════════════════════════════════════╗
-║  ATTACK SUCCESSFUL                                         ║
-╠════════════════════════════════════════════════════════════╣
-║  Target:         ${target.padEnd(42)}║
-║  Data Extracted: ${Math.floor(Math.random() * 100 + 50)} MB                                     ║
-║  Time Taken:     ${(Math.random() * 5 + 2).toFixed(2)}s                                     ║
-╠════════════════════════════════════════════════════════════╣
-║  REWARDS:                                                   ║
-║  EXP:            ${reward.exp}                                     ║
-║  Credits:        ${reward.credits}                                     ║
-║  Reputation:     +1                                      ║
-╚════════════════════════════════════════════════════════════╝
-
-Mission completed! You are now level ${playerStore.player.level}.
-      `.trim()
+      const dataExtracted = Math.floor(Math.random() * 100 + 50)
+      const timeTaken = (Math.random() * 5 + 2).toFixed(2)
+      
+      const content: string[] = []
+      content.push(drawTitle('ATTACK SUCCESSFUL', 2))
+      content.push(drawSeparator())
+      content.push(drawKeyValue('Target', target, 10))
+      content.push(drawKeyValue('Data Extracted', `${dataExtracted} MB`, 10))
+      content.push(drawKeyValue('Time Taken', `${timeTaken}s`, 10))
+      content.push(drawSeparator())
+      content.push(drawListItem('REWARDS:', ''))
+      content.push(drawListItem('EXP:', reward.exp.toString()))
+      content.push(drawListItem('Credits:', reward.credits.toString()))
+      content.push(drawListItem('Reputation:', '+1'))
+      
+      const result = drawBorder(content)
+      
+      return result + `\n${drawSuccess('Mission completed! You are now level ' + playerStore.player.level + '.')}`
     }
 
-    return 'Error: Failed to complete mission.'
+    return drawError('Failed to complete mission.')
   },
 }
 

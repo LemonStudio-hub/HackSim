@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import type { Mission } from '../types'
 import { nanoid } from 'nanoid'
 import { MISSION_CONFIG, NETWORK_CONFIG } from '../constants/game'
+import { drawBorder, drawTitle, drawSeparator, drawListItem, drawError } from '../utils/format'
 
 export const useMissionStore = defineStore('mission', () => {
   // ========== 状态 ==========
@@ -217,22 +218,22 @@ export const useMissionStore = defineStore('mission', () => {
    */
   function getMissionList(): string {
     if (available.value.length === 0 && !active.value) {
-      return 'No missions available. Try again later.'
+      return drawError('No missions available. Try again later.')
     }
 
-    const lineLength = 60
-    const contentLength = lineLength - 2
-
-    let output = '\n╔════════════════════════════════════════════════════════════╗\n'
-    output += '║              AVAILABLE MISSIONS                              ║\n'
-    output += '╠════════════════════════════════════════════════════════════╣\n'
+    const lineWidth = 60
+    const contentLength = lineWidth - 2
+    
+    const content: string[] = []
+    content.push(drawTitle('AVAILABLE MISSIONS', 14))
+    content.push(drawSeparator())
 
     if (active.value) {
       const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
       const idPrefix = `[ACTIVE] ${active.value.id.substring(0, 8)} - `
       const titlePart = `${active.value.title} ${stars}`
       const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
-      output += `║${idPrefix}${titlePart}${' '.repeat(padding)}║\n`
+      content.push(`${idPrefix}${titlePart}${' '.repeat(padding)}`)
     }
 
     available.value.forEach((mission, index) => {
@@ -240,13 +241,12 @@ export const useMissionStore = defineStore('mission', () => {
       const idPrefix = `[${(index + 1).toString().padStart(2)}] ${mission.id.substring(0, 8)} - `
       const titlePart = `${mission.title} ${stars}`
       const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
-      output += `║${idPrefix}${titlePart}${' '.repeat(padding)}║\n`
+      content.push(`${idPrefix}${titlePart}${' '.repeat(padding)}`)
     })
 
-    output += '╚════════════════════════════════════════════════════════════╝\n'
-    output += '\nUse "accept <ID>" to accept a mission.'
-
-    return output
+    const result = drawBorder(content)
+    
+    return result + '\n\n' + drawListItem('Use:', '"accept <ID>" to accept a mission')
   }
 
   /**
@@ -255,7 +255,7 @@ export const useMissionStore = defineStore('mission', () => {
    */
   function getCurrentMissionStatus(): string {
     if (!active.value) {
-      return 'No active mission. Use "missions" to see available missions.'
+      return drawError('No active mission.') + '\nUse "missions" to see available missions.'
     }
 
     const lineLength = 60

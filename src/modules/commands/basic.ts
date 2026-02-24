@@ -7,6 +7,15 @@ import type { BaseCommand } from './registry'
 import { usePlayerStore } from '../../stores/player'
 import { useGameStore } from '../../stores/game'
 import { GAME_CONFIG } from '../../constants/game'
+import {
+  drawBorder,
+  drawTitle,
+  drawSeparator,
+  drawListItem,
+  drawHeader,
+  drawSubHeader,
+  drawError,
+} from '../../utils/format'
 
 /**
  * Help 命令 - 显示帮助信息
@@ -22,28 +31,30 @@ export const helpCommand: BaseCommand = {
     if (args.length > 0) {
       // 显示特定命令的帮助
       const commandName = args[0]
-      return `Help for command: ${commandName}\n(Coming soon)`
+      return drawError(`Command "${commandName}" help is not implemented yet.\nRun "help" without arguments to see all commands.`)
     }
 
-    return `Available Commands:
-  Basic Commands:
-    help         - Show this help message
-    clear        - Clear the terminal
-    info         - Show player information
-    game         - Show game information
-    version      - Show version information
-  
-  Hacking Commands:
-    scan <IP>    - Scan a target IP address
-    connect <IP> - Connect to a target system
-    hack <IP>    - Hack a target system
-  
-  Mission Commands:
-    missions     - Show available missions
-    accept <ID>  - Accept a mission by ID
-    status       - Show current mission status
-  
-  Use 'help <command>' for more information about a command`
+    return drawHeader('AVAILABLE COMMANDS') + `
+
+${drawSubHeader('Basic Commands:')}
+${drawListItem('help', 'Show this help message')}
+${drawListItem('clear', 'Clear the terminal screen')}
+${drawListItem('info', 'Show player information')}
+${drawListItem('game', 'Show game information')}
+${drawListItem('version', 'Show version information')}
+
+${drawSubHeader('Hacking Commands:')}
+${drawListItem('scan <IP>', 'Scan a target IP address')}
+${drawListItem('connect <IP>', 'Connect to a target system')}
+${drawListItem('hack <IP>', 'Hack a target system')}
+
+${drawSubHeader('Mission Commands:')}
+${drawListItem('missions', 'Show available missions')}
+${drawListItem('accept <ID>', 'Accept a mission by ID or index')}
+${drawListItem('status', 'Show current mission status')}
+
+${drawSubHeader('Usage:')}
+Use "help <command>" for more information about a specific command.`
   },
 }
 
@@ -95,10 +106,22 @@ export const versionCommand: BaseCommand = {
   description: 'Show version information',
   usage: 'version',
   async execute(): Promise<string> {
-    return `${GAME_CONFIG.NAME} v${GAME_CONFIG.VERSION}
-
-A hacker simulator game built with Vue 3 + TypeScript
-
-© 2026 HackSim. All rights reserved.`
+    const content: string[] = []
+    content.push(drawTitle('VERSION'))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Name', GAME_CONFIG.NAME, 8))
+    content.push(drawKeyValue('Version', GAME_CONFIG.VERSION, 8))
+    content.push(drawSeparator())
+    content.push(drawListItem('Built with', 'Vue 3 + TypeScript'))
+    content.push(drawListItem('Copyright', '© 2026 HackSim. All rights reserved.'))
+    
+    return drawBorder(content)
   },
+}
+
+/**
+ * 辅助函数：绘制键值对
+ */
+function drawKeyValue(key: string, value: string, keyWidth: number = 8): string {
+  return `  ${key}:${' '.repeat(Math.max(0, keyWidth - key.length - 1))}${value}`
 }
