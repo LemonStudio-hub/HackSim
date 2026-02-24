@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { useTerminalStore } from '../stores/terminal'
@@ -16,7 +16,6 @@ import { CommandRegistry } from '../modules/commands'
 import { helpCommand, clearCommand, infoCommand, gameCommand, versionCommand } from '../modules/commands/basic'
 import { scanCommand, connectCommand, hackCommand } from '../modules/commands/hack'
 import { missionsCommand, acceptCommand, statusCommand } from '../modules/commands/mission'
-import { useGestures, isTouchDevice, preventScroll } from '../composables/useGestures'
 
 const terminalRef = ref<HTMLElement>()
 
@@ -32,15 +31,26 @@ let currentLine = ''
 let commandHistory: string[] = []
 let historyIndex = -1
 
-// 检测是否为触摸设备
-const isTouch = computed(() => isTouchDevice())
-
 /**
  * 显示提示符
  */
 function showPrompt() {
   if (!terminal) return
   terminal.write('\x1b[32m>\x1b[0m ')
+  // 滚动到底部
+  scrollToBottom()
+}
+
+/**
+ * 滚动到底部
+ */
+function scrollToBottom() {
+  if (!terminal) return
+  // 使用xterm.js内置的滚动方法
+  const viewport = terminal.element?.querySelector('.xterm-viewport') as HTMLElement
+  if (viewport) {
+    viewport.scrollTop = viewport.scrollHeight
+  }
 }
 
 /**
@@ -91,37 +101,9 @@ function initTerminal() {
   // 初始化游戏
   gameStore.initialize()
 
-  // 触摸设备上阻止默认滚动
-  if (isTouch.value && terminalRef.value) {
-    preventScroll(terminalRef.value)
-  }
-
-  // 初始化手势控制
-  initTouchGestures()
-
   // 添加键盘输入监听
   terminal.onData(handleTerminalInput)
   terminal.onKey(handleKeyInput)
-}
-
-/**
- * 初始化触摸手势
- */
-function initTouchGestures() {
-  if (!terminalRef.value) return
-
-  // 使用手势组合式函数
-  const { initGestures } = useGestures(terminalRef, {
-    // 捏指缩放字体
-    onPinch: (scale) => {
-      const currentSize = terminalStore.fontSize
-      const newSize = Math.max(10, Math.min(24, Math.round(currentSize * scale)))
-      terminalStore.setFontSize(newSize)
-      terminal?.writeln(`Font size: ${newSize}px`)
-    },
-  })
-
-  initGestures()
 }
 
 /**
@@ -319,8 +301,7 @@ onUnmounted(() => {
 .terminal {
   flex: 1;
   padding: var(--spacing-md);
-  overflow: auto;
-  -webkit-overflow-scrolling: touch; // iOS 惯性滚动
+  // 移除 overflow: auto，让 xterm.js 自己管理滚动
 
   // 移动端优化
   @media (max-width: 640px) {
@@ -363,11 +344,6 @@ onUnmounted(() => {
 
 // 移动端优化
 @media (max-width: 640px) {
-  .terminal-container {
-    // 禁止页面缩放
-    touch-action: pan-y;
-  }
-
   .terminal {
     font-size: 12px;
   }
