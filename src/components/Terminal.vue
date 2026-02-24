@@ -41,30 +41,40 @@ function formatTerminal() {
   if (!terminal) return
   
   try {
-    // 清空终端缓冲区
+    // 简化格式化操作，只做必要的清理
     terminal.clear()
-    
-    // 重置终端状态
-    terminal.write('\x1bc')  // 完整重置终端
-    
-    // 移动光标到左上角
-    terminal.write('\x1b[H')
-    
-    // 清除屏幕
-    terminal.write('\x1b[2J')
-    
-    // 重置所有属性
-    terminal.write('\x1b[0m')
     
     // 确保光标可见
     terminal.write('\x1b[?25h')
     
-    // 刷新终端以确保所有操作生效
-    if (terminal) {
-      terminal.refresh(0, terminal.rows - 1)
-    }
+    // 滚动到最底部
+    scrollToBottom()
   } catch (error) {
     console.error('Failed to format terminal:', error)
+  }
+}
+
+/**
+ * 滚动到终端最底部
+ */
+function scrollToBottom() {
+  if (!terminal) return
+  try {
+    terminal.scrollToBottom()
+  } catch (error) {
+    console.error('Failed to scroll to bottom:', error)
+  }
+}
+
+/**
+ * 聚焦终端
+ */
+function focusTerminal() {
+  if (!terminal) return
+  try {
+    terminal.focus()
+  } catch (error) {
+    console.error('Failed to focus terminal:', error)
   }
 }
 
@@ -126,6 +136,9 @@ function initTerminal() {
         // 然后输出开机动画
         await showBootSequence()
         
+        // 滚动到最底部
+        scrollToBottom()
+        
         // 显示初始提示符
         showPrompt()
         
@@ -137,6 +150,9 @@ function initTerminal() {
         
         // 添加键盘输入监听
         terminal.onData(handleTerminalInput)
+        
+        // 聚焦终端
+        focusTerminal()
       } catch (error) {
         console.error('Failed to fit terminal:', error)
       }
@@ -212,6 +228,7 @@ async function showBootSequence() {
       } else {
         terminal.writeln(log.text)
       }
+      scrollToBottom()
       await sleep(50) // 每行延迟50ms
     }
   } catch (error) {
@@ -241,14 +258,15 @@ function handleTerminalInput(data: string) {
         // 添加到历史记录
         commandHistory.push(currentLine)
         
-        // 显示执行的命令
-        terminal.writeln(`\x1b[93m$\x1b[0m ${currentLine}`)
+        // 显示执行的命令（不重复显示提示符，因为用户输入时已经有提示符了）
+        terminal.writeln(`\x1b[90m${currentLine}\x1b[0m`)  // 使用灰色显示命令
         
         // 执行命令
         executeCommand(currentLine)
       } else {
         // 空行 - 显示新提示符
         showPrompt()
+        scrollToBottom()
       }
       
       currentLine = ''
@@ -289,9 +307,10 @@ async function executeCommand(input: string) {
     if (!command) {
       terminal?.writeln(`Error: Command not found: ${commandName}`)
       terminal?.writeln(`Type 'help' to see available commands.`)
-      // 输出提示符
+      // 输出空行和提示符
       terminal?.writeln('')
       showPrompt()
+      scrollToBottom()
       return
     }
 
@@ -301,6 +320,7 @@ async function executeCommand(input: string) {
       terminal?.writeln(validationResult.message || 'Invalid command arguments')
       terminal?.writeln('')
       showPrompt()
+      scrollToBottom()
       return
     }
 
@@ -312,15 +332,18 @@ async function executeCommand(input: string) {
       // clear命令：清空终端后显示提示符
       terminal.clear()
       showPrompt()
+      scrollToBottom()
     } else if (output && output.trim() !== '') {
       // 有输出：显示输出，然后显示提示符
       terminal?.writeln(output)
       terminal?.writeln('')
       showPrompt()
+      scrollToBottom()
     } else {
       // 无输出：直接显示提示符
       terminal?.writeln('')
       showPrompt()
+      scrollToBottom()
     }
   } catch (error) {
     // 错误处理：确保终端状态一致
@@ -329,6 +352,7 @@ async function executeCommand(input: string) {
       terminal?.writeln(`Error: ${errorMessage}`)
       terminal?.writeln('')
       showPrompt()
+      scrollToBottom()
     } catch (writeError) {
       // 如果写入错误也无法处理，至少输出到控制台
       console.error('Failed to write error to terminal:', writeError)
@@ -398,10 +422,11 @@ onUnmounted(() => {
 .terminal {
   flex: 1;
   padding: var(--spacing-md);
-  // 移除 overflow: auto，让 xterm.js 自己管理滚动
+  // 让 xterm.js 自己管理滚动
   // 添加触摸优化
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  cursor: text;
 
   // 移动端优化
   @media (max-width: 640px) {
@@ -418,6 +443,7 @@ onUnmounted(() => {
 // 覆盖 xterm.js 默认样式
 :deep(.xterm) {
   padding: 0 !important;
+  height: 100% !important;
 }
 
 :deep(.xterm-viewport) {
@@ -426,6 +452,8 @@ onUnmounted(() => {
   // 移动端优化
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 :deep(.xterm-viewport::-webkit-scrollbar) {
