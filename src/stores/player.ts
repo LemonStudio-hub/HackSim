@@ -54,15 +54,25 @@ export const usePlayerStore = defineStore('player', () => {
    * @param amount 经验值数量
    */
   function addExp(amount: number): void {
+    if (amount <= 0) return
+    
     player.value.exp += amount
-
+  
     // 检查是否升级
-    while (player.value.exp >= expToNextLevel.value) {
-      player.value.level++
-      player.value.exp -= expToNextLevel.value
+    while (player.value.level > 0) {
+      const currentLevelExpNeeded = Math.floor(
+        EXP_CONFIG.BASE_EXP_REQUIREMENT *
+          Math.pow(EXP_CONFIG.EXP_MULTIPLIER, player.value.level - 1)
+      )
+      
+      if (player.value.exp >= currentLevelExpNeeded) {
+        player.value.level++
+        player.value.exp -= currentLevelExpNeeded
+      } else {
+        break
+      }
     }
   }
-
   /**
    * 添加信用点
    * @param amount 信用点数量

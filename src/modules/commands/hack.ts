@@ -7,7 +7,7 @@ import type { BaseCommand } from './registry'
 import { useTerminalStore } from '../../stores/terminal'
 import { useMissionStore } from '../../stores/mission'
 import { usePlayerStore } from '../../stores/player'
-import { NETWORK_CONFIG, THEME } from '../../constants/game'
+import { NETWORK_CONFIG, THEME, HACK_CONFIG } from '../../constants/game'
 import { sleep, isValidIP } from '../../utils/helpers'
 import {
   drawBorder,
@@ -31,7 +31,8 @@ function scanTarget(_target: string): {
   services: string[]
 } {
   // 生成随机端口
-  const portCount = Math.floor(Math.random() * 5) + 1
+  const { min: minPorts, max: maxPorts } = HACK_CONFIG.PORT_COUNT_RANGE
+  const portCount = Math.floor(Math.random() * (maxPorts - minPorts + 1)) + minPorts
   const ports: number[] = []
   const availablePorts = [...NETWORK_CONFIG.COMMON_PORTS]
 
@@ -54,20 +55,11 @@ function scanTarget(_target: string): {
   const services = ports.map((port) => serviceMap[port] || 'Unknown')
 
   // 生成安全等级
-  const security = Math.floor(Math.random() * 5) + 1
+  const { min: minSec, max: maxSec } = HACK_CONFIG.SECURITY_LEVEL_RANGE
+  const security = Math.floor(Math.random() * (maxSec - minSec + 1)) + minSec
 
   // 生成节点名称
-  const names = [
-    'Corporate Server',
-    'Database Server',
-    'Web Server',
-    'Mail Server',
-    'File Server',
-    'Backup Server',
-    'Development Server',
-    'Production Server',
-  ]
-  const name = names[Math.floor(Math.random() * names.length)]
+  const name = NETWORK_CONFIG.SERVER_NAMES[Math.floor(Math.random() * NETWORK_CONFIG.SERVER_NAMES.length)]
 
   return { name, ports, security, services }
 }
@@ -97,15 +89,15 @@ export const scanCommand: BaseCommand = {
     const terminalStore = useTerminalStore()
 
     // 模拟扫描过程
-    await sleep(1000)
+    await sleep(HACK_CONFIG.DELAY.SCAN_INIT)
     terminalStore.write('Initializing scan...', true)
-    await sleep(500)
+    await sleep(HACK_CONFIG.DELAY.SCAN_PORTS)
     terminalStore.write('Scanning ports...', true)
-    await sleep(800)
+    await sleep(HACK_CONFIG.DELAY.SCAN_SERVICES)
     terminalStore.write('Analyzing services...', true)
-    await sleep(500)
+    await sleep(HACK_CONFIG.DELAY.SCAN_SECURITY)
     terminalStore.write('Detecting security measures...', true)
-    await sleep(300)
+    await sleep(HACK_CONFIG.DELAY.SCAN_DETECT)
 
     // 执行扫描
     const result = scanTarget(target)
@@ -149,22 +141,23 @@ export const connectCommand: BaseCommand = {
     const terminalStore = useTerminalStore()
 
     // 模拟连接过程
-    await sleep(800)
+    await sleep(HACK_CONFIG.DELAY.CONNECT_ESTABLISH)
     terminalStore.write('Establishing connection...', true)
-    await sleep(600)
+    await sleep(HACK_CONFIG.DELAY.CONNECT_HANDSHAKE)
     terminalStore.write('Handshake...', true)
-    await sleep(400)
+    await sleep(HACK_CONFIG.DELAY.CONNECT_AUTH)
     terminalStore.write('Authenticating...', true)
-    await sleep(300)
+    await sleep(HACK_CONFIG.DELAY.CONNECT_AUTHENTICATE)
 
     // 检查是否是任务目标
     const missionStore = useMissionStore()
     const isMissionTarget = missionStore.active?.target === target
 
     if (isMissionTarget) {
-      terminalStore.writeColored(drawSuccess('Connection established!'), THEME.SUCCESS)
+      terminalStore.writeColored(drawSuccess('Connection established!'), THEME.TERMINAL.SUCCESS)
       
-      const latency = Math.floor(Math.random() * 50 + 10)
+      const { min: minLatency, max: maxLatency } = HACK_CONFIG.DELAY.LATENCY_RANGE
+      const latency = Math.floor(Math.random() * (maxLatency - minLatency)) + minLatency
       
       const content: string[] = []
       content.push(drawTitle('CONNECTION ESTABLISHED', 2))
@@ -178,7 +171,7 @@ export const connectCommand: BaseCommand = {
       
       return drawBorder(content)
     } else {
-      terminalStore.writeColored(drawError('Access denied!'), THEME.ERROR)
+      terminalStore.writeColored(drawError('Access denied!'), THEME.TERMINAL.ERROR)
       
       const content: string[] = []
       content.push(drawTitle('CONNECTION FAILED', 2))
@@ -230,24 +223,24 @@ export const hackCommand: BaseCommand = {
     }
 
     // 模拟入侵过程
-    await sleep(1000)
+    await sleep(HACK_CONFIG.DELAY.HACK_INIT)
     terminalStore.write('Initializing attack sequence...', true)
-    await sleep(600)
+    await sleep(HACK_CONFIG.DELAY.HACK_SCAN)
     terminalStore.write('Scanning for vulnerabilities...', true)
-    await sleep(800)
+    await sleep(HACK_CONFIG.DELAY.HACK_EXPLOIT)
     terminalStore.write('Exploiting vulnerabilities...', true)
-    await sleep(500)
+    await sleep(HACK_CONFIG.DELAY.HACK_BYPASS)
     terminalStore.write('Bypassing firewall...', true)
-    await sleep(700)
+    await sleep(HACK_CONFIG.DELAY.HACK_ESCALATE)
     terminalStore.write('Escalating privileges...', true)
-    await sleep(600)
+    await sleep(HACK_CONFIG.DELAY.HACK_PRIVILEGE)
     terminalStore.write('Extracting data...', true)
-    await sleep(800)
+    await sleep(HACK_CONFIG.DELAY.HACK_EXTRACT)
     terminalStore.write('Covering tracks...', true)
-    await sleep(400)
+    await sleep(HACK_CONFIG.DELAY.HACK_COVER)
 
     // 任务成功
-    terminalStore.writeColored(drawSuccess('Attack successful!'), THEME.SUCCESS)
+    terminalStore.writeColored(drawSuccess('Attack successful!'), THEME.TERMINAL.SUCCESS)
 
     // 完成任务并获取奖励
     const reward = missionStore.completeMission()
@@ -257,8 +250,11 @@ export const hackCommand: BaseCommand = {
       playerStore.addCredits(reward.credits)
       playerStore.addReputation(1)
 
-      const dataExtracted = Math.floor(Math.random() * 100 + 50)
-      const timeTaken = (Math.random() * 5 + 2).toFixed(2)
+      const { min: minData, max: maxData } = HACK_CONFIG.DATA_EXTRACTION.SIZE_RANGE
+      const dataExtracted = Math.floor(Math.random() * (maxData - minData)) + minData
+      
+      const { min: minTime, max: maxTime } = HACK_CONFIG.HACK_TIME.DURATION_RANGE
+      const timeTaken = (Math.random() * (maxTime - minTime) + minTime).toFixed(2)
       
       const content: string[] = []
       content.push(drawTitle('ATTACK SUCCESSFUL', 2))

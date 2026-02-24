@@ -1,24 +1,20 @@
-# wrangler.toml 用于 Cloudflare Workers 配置
-# 这是一个模板文件，用于将 HackSim 部署到 Cloudflare 平台
+# wrangler.toml 用于 Cloudflare Pages 部署配置
+# 将 HackSim 部署到 Cloudflare Pages 平台
 
 name = "hacksim"
-main = "src/index.ts"
 compatibility_date = "2024-01-01"
-
-# Cloudflare Pages 部署配置（用于前端）
-[env.production]
-vars = { ENVIRONMENT = "production" }
-
-# Cloudflare Workers 配置（用于后端 API）
-[env.development]
-vars = { ENVIRONMENT = "development" }
 
 # 构建配置
 [build]
-command = "npm run build"
+command = "pnpm build"
 cwd = "."
 
-# 监视配置
-[build.upload]
-format = "modules"
-main = "./dist/index.mjs"
+# 页面配置
+pages_build_output_dir = "dist"
+
+# 环境变量
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.development]
+vars = { ENVIRONMENT = "development" }

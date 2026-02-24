@@ -31,8 +31,29 @@ export const helpCommand: BaseCommand = {
   async execute(args: string[]): Promise<string> {
     if (args.length > 0) {
       // 显示特定命令的帮助
-      const commandName = args[0]
-      return drawError(`Command "${commandName}" help is not implemented yet.\nRun "help" without arguments to see all commands.`)
+      const commandName = args[0].toLowerCase()
+      
+      // 由于我们无法直接访问已注册的命令，这里显示所有命令的基本信息
+      return drawHeader(`COMMAND HELP: ${commandName.toUpperCase()}`) + `
+
+${drawSubHeader('Basic Commands:')}
+${drawListItem('help', 'Show this help message')}
+${drawListItem('clear', 'Clear the terminal screen')}
+${drawListItem('info', 'Show player information')}
+${drawListItem('game', 'Show game information')}
+${drawListItem('version', 'Show version information')}
+
+${drawSubHeader('Hacking Commands:')}
+${drawListItem('scan <IP>', 'Scan a target IP address')}
+${drawListItem('connect <IP>', 'Connect to a target system')}
+${drawListItem('hack <IP>', 'Hack a target system')}
+
+${drawSubHeader('Mission Commands:')}
+${drawListItem('missions', 'Show available missions')}
+${drawListItem('accept <ID>', 'Accept a mission by ID or index')}
+${drawListItem('status', 'Show current mission status')}
+
+${drawError('Note: Detailed command help is not implemented yet.')}`
     }
 
     return drawHeader('AVAILABLE COMMANDS') + `

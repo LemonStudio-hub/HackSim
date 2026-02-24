@@ -108,9 +108,15 @@ const completedCount = computed(() => missionStore.completed.length)
 
 function acceptMission(missionId: string) {
   const success = missionStore.acceptMission(missionId)
-  if (success && terminalStore.terminalInstance) {
-    terminalStore.terminalInstance.writeln('\nMission accepted successfully!')
-    terminalStore.terminalInstance.writeln(`Use 'status' to view mission objectives.`)
+  if (success) {
+    if (terminalStore.terminalInstance) {
+      terminalStore.terminalInstance.writeln('\nMission accepted successfully!')
+      terminalStore.terminalInstance.writeln(`Use 'status' to view mission objectives.`)
+    }
+  } else {
+    if (terminalStore.terminalInstance) {
+      terminalStore.terminalInstance.writeln('\nFailed to accept mission. The mission may no longer be available.')
+    }
   }
 }
 

@@ -44,6 +44,11 @@ export const acceptCommand: BaseCommand = {
     const missionStore = useMissionStore()
     const identifier = args[0]
 
+    // 检查是否已经有活跃任务
+    if (missionStore.active) {
+      return drawError('You already have an active mission.') + '\n\nUse "status" to view your current mission or complete it first.'
+    }
+
     // 尝试通过索引接取任务
     const index = parseInt(identifier)
     if (!isNaN(index) && index > 0 && index <= missionStore.available.length) {
@@ -61,6 +66,8 @@ export const acceptCommand: BaseCommand = {
         content.push(drawListItem('Next:', 'Use "status" to view mission objectives'))
         
         return drawBorder(content)
+      } else {
+        return drawError('Failed to accept mission. The mission may no longer be available.')
       }
     }
 

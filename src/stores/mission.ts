@@ -216,7 +216,7 @@ export const useMissionStore = defineStore('mission', () => {
     if (active.value) {
       const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
       const missionLine = `  [ACTIVE] ${active.value.id.substring(0, 8)} - ${active.value.title} ${stars}`
-      content.push(missionLine.padEnd(58))
+      content.push(missionLine)
     }
   
     available.value.forEach((mission, index) => {

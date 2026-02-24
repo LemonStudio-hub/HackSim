@@ -49,20 +49,25 @@ export const useGameStore = defineStore('game', () => {
    * 初始化游戏
    */
   function initialize(): void {
+    if (isInitialized.value) return
+    
     isInitialized.value = true
     isRunning.value = true
     startTime.value = Date.now()
     startPlayTimeTimer()
   }
-
+  
   /**
    * 开始游戏
    */
   function start(): void {
-    isRunning.value = true
-    startPlayTimeTimer()
+    if (!isInitialized.value) {
+      initialize()
+    } else if (!isRunning.value) {
+      isRunning.value = true
+      startPlayTimeTimer()
+    }
   }
-
   /**
    * 暂停游戏
    */

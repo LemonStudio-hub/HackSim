@@ -140,41 +140,43 @@ export function useGestures(
    * 处理触摸结束
    */
   function handleTouchEnd(event: TouchEvent) {
-    const touches = event.changedTouches
-    
+    const touches = event.touches.length
+  
     // 清除长按定时器
     if (touchState.value.longPressTimer) {
       clearTimeout(touchState.value.longPressTimer)
       touchState.value.longPressTimer = null
     }
-
-    const endTime = Date.now()
-
-    // 检测滑动
-    if (endTime > touchState.value.startTime) {
-      const deltaTime = endTime - touchState.value.startTime
-      const velocityX = Math.abs(touchState.value.lastX - touchState.value.startX) / deltaTime
-      const velocityY = Math.abs(touchState.value.lastY - touchState.value.startY) / deltaTime
-
-      if (Math.abs(touchState.value.lastX - touchState.value.startX) > SWIPE_THRESHOLD && velocityX > SWIPE_VELOCITY) {
-        if (touchState.value.lastX - touchState.value.startX > 0) {
-          onSwipeRight?.()
-        } else {
-          onSwipeLeft?.()
-        }
-      } else if (Math.abs(touchState.value.lastY - touchState.value.startY) > SWIPE_THRESHOLD && velocityY > SWIPE_VELOCITY) {
-        if (touchState.value.lastY - touchState.value.startY > 0) {
-          onSwipeDown?.()
-        } else {
-          onSwipeUp?.()
+  
+    // 只在最后一只手指离开时触发滑动检测
+    if (touches === 0 && touchState.value.touches === 1) {
+      const endTime = Date.now()
+  
+      // 检测滑动
+      if (endTime > touchState.value.startTime) {
+        const deltaTime = endTime - touchState.value.startTime
+        const velocityX = Math.abs(touchState.value.lastX - touchState.value.startX) / deltaTime
+        const velocityY = Math.abs(touchState.value.lastY - touchState.value.startY) / deltaTime
+  
+        if (Math.abs(touchState.value.lastX - touchState.value.startX) > SWIPE_THRESHOLD && velocityX > SWIPE_VELOCITY) {
+          if (touchState.value.lastX - touchState.value.startX > 0) {
+            onSwipeRight?.()
+          } else {
+            onSwipeLeft?.()
+          }
+        } else if (Math.abs(touchState.value.lastY - touchState.value.startY) > SWIPE_THRESHOLD && velocityY > SWIPE_VELOCITY) {
+          if (touchState.value.lastY - touchState.value.startY > 0) {
+            onSwipeDown?.()
+          } else {
+            onSwipeUp?.()
+          }
         }
       }
     }
-
+  
     // 重置触摸状态
-    touchState.value.touches = touches.length
+    touchState.value.touches = touches
   }
-
   /**
    * 初始化手势监听
    */
@@ -265,6 +267,6 @@ export function preventScroll(element: HTMLElement) {
  */
 export function allowScroll(element: HTMLElement) {
   element.addEventListener('touchmove', () => {
-    // 不阻止默认行为
+    // 不阻止默认行为，允许正常滚动
   }, { passive: true })
 }

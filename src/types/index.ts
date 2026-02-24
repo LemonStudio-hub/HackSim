@@ -22,20 +22,6 @@ export interface Player {
 }
 
 /**
- * 命令接口
- */
-export interface Command {
-  /** 命令名称 */
-  name: string
-  /** 命令描述 */
-  description: string
-  /** 使用方法 */
-  usage: string
-  /** 命令执行函数 */
-  execute: (args: string[]) => Promise<string>
-}
-
-/**
  * 任务接口
  */
 export interface Mission {

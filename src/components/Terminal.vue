@@ -11,7 +11,8 @@ import { usePlayerStore } from '../stores/player'
 import { useMissionStore } from '../stores/mission'
 import { useGameStore } from '../stores/game'
 import { CommandRegistry } from '../modules/commands'
-import { type BaseCommand } from '../modules/commands/registry'
+import { NETWORK_CONFIG } from '../constants/game'
+import { sleep } from '../utils/helpers'
 import { helpCommand, clearCommand, infoCommand, gameCommand, versionCommand } from '../modules/commands/basic'
 import { scanCommand, connectCommand, hackCommand } from '../modules/commands/hack'
 import { missionsCommand, acceptCommand, statusCommand } from '../modules/commands/mission'
@@ -22,7 +23,6 @@ const TERMINAL_CONFIG = {
   PROMPT_COLOR: '93',
   COMMAND_COLOR: '90',
   ERROR_COLOR: '31',
-  SUCCESS_COLOR: '32',
   FONT_SIZE: 14,
   FONT_FAMILY: '"Courier New", Courier, monospace',
   BACKGROUND: '#0d0208',
@@ -213,15 +213,14 @@ async function executeCommand(input: string): Promise<void> {
     }
 
     // 执行命令
-    const output = await (command as BaseCommand).execute(args)
+    const output = await command.execute(args)
 
     // 处理输出
-    writeln()
-    
     if (output === '__CLEAR__') {
       clearTerminal()
       showPrompt()
     } else if (output?.trim()) {
+      writeln()
       writeln(output)
       writeln()
       showPrompt()
@@ -350,6 +349,11 @@ function createTerminal(): void {
 async function showBootSequence(): Promise<void> {
   if (!terminal) return
 
+  // 生成随机 IP 地址
+  const range = NETWORK_CONFIG.COMMON_RANGES[Math.floor(Math.random() * NETWORK_CONFIG.COMMON_RANGES.length)]
+  const suffix = Math.floor(Math.random() * 254) + 1
+  const connectionIP = `${range}${suffix}`
+
   const bootMessages = [
     { text: '[BOOT] Starting HackSim OS v0.1.0...', color: '36', delay: 30 },
     { text: '[SYSTEM] Detecting hardware configuration...', color: '36', delay: 40 },
@@ -361,7 +365,7 @@ async function showBootSequence(): Promise<void> {
     { text: '[KERNEL] File system mounted', color: '90', delay: 20 },
     { text: '[KERNEL] Security protocols loaded', color: '90', delay: 20 },
     { text: '[NETWORK] Establishing secure connections...', color: '36', delay: 60 },
-    { text: '[NETWORK] Connection established to: 192.168.1.100', color: '90', delay: 30 },
+    { text: `[NETWORK] Connection established to: ${connectionIP}`, color: '90', delay: 30 },
     { text: '[NETWORK] Encryption: AES-256-GCM', color: '90', delay: 20 },
     { text: '[NETWORK] Tunnel active: Secure', color: '90', delay: 20 },
     { text: '[SERVICES] Loading system services...', color: '36', delay: 50 },
@@ -417,16 +421,9 @@ async function showBootSequence(): Promise<void> {
     }
     scrollToBottom()
     if (msg.delay > 0) {
-      await delay(msg.delay)
+      await sleep(msg.delay)
     }
   }
-}
-
-/**
- * 延迟函数
- */
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**

@@ -121,8 +121,7 @@ hacksim/
 │   ├── components/               # Vue 组件
 │   │   ├── Terminal.vue          # 终端组件
 │   │   ├── UserPanel.vue         # 用户面板
-│   │   ├── MissionPanel.vue      # 任务面板
-│   │   └── HelloWorld.vue        # 示例组件
+│   │   └── MissionPanel.vue      # 任务面板
 │   │
 │   ├── stores/                   # Pinia 状态管理
 │   │   ├── player.ts             # 玩家状态

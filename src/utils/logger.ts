@@ -104,21 +104,27 @@ class Logger {
    * 输出到控制台
    */
   private logToConsole(entry: LogEntry): void {
+    // 只在开发环境输出日志
+    // @ts-ignore - Vite 环境变量
+    if (import.meta?.env?.PROD) {
+      return
+    }
+  
     const { enableTimestamp, enableColors } = this.options
     const { timestamp, levelName, message, context, data } = entry
-
+  
     let output = ''
     
     if (enableTimestamp) {
       output += `[${timestamp}] `
     }
-
+  
     if (context) {
       output += `[${context}] `
     }
-
+  
     output += `[${levelName}] ${message}`
-
+  
     // 根据日志级别选择颜色
     const colors = {
       [LogLevel.DEBUG]: '\x1b[36m',    // Cyan
@@ -128,19 +134,17 @@ class Logger {
       [LogLevel.FATAL]: '\x1b[35m',    // Magenta
     }
     const resetColor = '\x1b[0m'
-
+  
     if (enableColors) {
       output = `${colors[entry.level]}${output}${resetColor}`
     }
-
+  
     console.log(output)
     
     if (data !== undefined) {
       console.log(data)
     }
-  }
-
-  /**
+  }  /**
    * DEBUG级别日志
    */
   public debug(message: string, data?: unknown): void {

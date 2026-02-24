@@ -37,6 +37,13 @@ export const THEME = {
   SUCCESS: '#00ff41',
   ERROR: '#ff4141',
   WARNING: '#ffcc00',
+  /** ANSI 终端颜色代码（用于终端输出） */
+  TERMINAL: {
+    SUCCESS: '92',
+    ERROR: '91',
+    WARNING: '93',
+    INFO: '36',
+  },
 }
 
 /**
@@ -75,6 +82,59 @@ export const NETWORK_CONFIG = {
   ],
   /** 常见开放端口 */
   COMMON_PORTS: [21, 22, 23, 80, 443, 3306, 5432],
+  /** 节点名称列表 */
+  SERVER_NAMES: [
+    'Corporate Server',
+    'Database Server',
+    'Web Server',
+    'Mail Server',
+    'File Server',
+    'Backup Server',
+    'Development Server',
+    'Production Server',
+  ],
+}
+
+/**
+ * 黑客操作配置
+ */
+export const HACK_CONFIG = {
+  /** 端口数量范围 */
+  PORT_COUNT_RANGE: { min: 1, max: 5 },
+  /** 安全等级范围 */
+  SECURITY_LEVEL_RANGE: { min: 1, max: 5 },
+  /** 延迟时间配置（毫秒） */
+  DELAY: {
+    SCAN_INIT: 1000,
+    SCAN_PORTS: 500,
+    SCAN_SERVICES: 800,
+    SCAN_SECURITY: 500,
+    SCAN_DETECT: 300,
+    CONNECT_ESTABLISH: 800,
+    CONNECT_HANDSHAKE: 600,
+    CONNECT_AUTH: 400,
+    CONNECT_AUTHENTICATE: 300,
+    HACK_INIT: 1000,
+    HACK_SCAN: 600,
+    HACK_EXPLOIT: 800,
+    HACK_BYPASS: 500,
+    HACK_ESCALATE: 700,
+    HACK_PRIVILEGE: 600,
+    HACK_EXTRACT: 800,
+    HACK_COVER: 400,
+    /** 延迟范围（毫秒） */
+    LATENCY_RANGE: { min: 10, max: 60 },
+  },
+  /** 数据提取配置 */
+  DATA_EXTRACTION: {
+    /** 数据量范围（MB） */
+    SIZE_RANGE: { min: 50, max: 150 },
+  },
+  /** 入侵时间配置（秒） */
+  HACK_TIME: {
+    /** 时间范围（秒） */
+    DURATION_RANGE: { min: 2, max: 7 },
+  },
 }
 
 /**
