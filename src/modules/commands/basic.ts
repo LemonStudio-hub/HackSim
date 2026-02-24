@@ -5,7 +5,6 @@
 
 import type { BaseCommand } from './registry'
 import { usePlayerStore } from '../../stores/player'
-import { useTerminalStore } from '../../stores/terminal'
 import { useGameStore } from '../../stores/game'
 import { GAME_CONFIG } from '../../constants/game'
 
@@ -61,16 +60,8 @@ export const clearCommand: BaseCommand = {
   usage: 'clear',
   aliases: ['cls'],
   async execute(): Promise<string> {
-    const terminalStore = useTerminalStore()
-    terminalStore.clear()
-    
-    // 清空 xterm.js 终端显示
-    const terminal = terminalStore.terminalInstance
-    if (terminal) {
-      terminal.clear()
-    }
-    
-    return ''
+    // 不返回任何内容，让 Terminal 组件处理清空操作
+    return '__CLEAR__'
   },
 }
 

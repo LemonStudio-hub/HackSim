@@ -163,6 +163,8 @@ function handleTerminalInput(data: string) {
       // 添加到历史记录
       commandHistory.push(currentLine)
       historyIndex = commandHistory.length
+      // 显示执行的命令
+      terminal.writeln(`\x1b[32m>\x1b[0m ${currentLine}`)
       // 执行命令
       executeCommand(currentLine)
     } else {
@@ -252,9 +254,14 @@ async function executeCommand(input: string) {
   // 执行命令
   try {
     const output = await (command as any).execute(args)
-    if (output) {
+    
+    // 处理特殊命令
+    if (output === '__CLEAR__') {
+      terminal.clear()
+    } else if (output) {
       terminal?.writeln(output)
     }
+    
     // 输出提示符
     terminal?.writeln('')
     showPrompt()
