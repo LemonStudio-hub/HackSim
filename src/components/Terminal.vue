@@ -1,11 +1,9 @@
 <template>
-  <div class="terminal-container">
-    <div ref="terminalRef" class="terminal"></div>
-  </div>
+  <div ref="containerRef" class="terminal-container"></div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { useTerminalStore } from '../stores/terminal'
@@ -18,8 +16,23 @@ import { helpCommand, clearCommand, infoCommand, gameCommand, versionCommand } f
 import { scanCommand, connectCommand, hackCommand } from '../modules/commands/hack'
 import { missionsCommand, acceptCommand, statusCommand } from '../modules/commands/mission'
 
-const terminalRef = ref<HTMLElement>()
+// ============ 常量定义 ============
+const TERMINAL_CONFIG = {
+  PROMPT: '$ ',
+  PROMPT_COLOR: '93',
+  COMMAND_COLOR: '90',
+  ERROR_COLOR: '31',
+  SUCCESS_COLOR: '32',
+  FONT_SIZE: 14,
+  FONT_FAMILY: '"Courier New", Courier, monospace',
+  BACKGROUND: '#0d0208',
+  FOREGROUND: '#e0e0e0',
+  CURSOR: '#00ff41',
+  SCROLLBACK: 1000,
+} as const
 
+// ============ 状态 ============
+const containerRef = ref<HTMLElement>()
 const terminalStore = useTerminalStore()
 const playerStore = usePlayerStore()
 const missionStore = useMissionStore()
@@ -28,297 +41,171 @@ const gameStore = useGameStore()
 let terminal: Terminal | null = null
 let fitAddon: FitAddon | null = null
 let commandRegistry: CommandRegistry | null = null
-let currentLine = ''
-let commandHistory: string[] = []
-let resizeTimer: number | null = null
-let isInitialized = false
+
+// 输入状态
+let inputBuffer = ''
+let isProcessing = false
+
+// 历史记录
+const history: string[] = []
+let historyIndex = -1
+
+// 清理
+let resizeTimeout: number | null = null
+
+// ============ 核心方法 ============
 
 /**
- * 格式化终端
- * 在初始化后执行，清除任何可能的渲染问题
+ * 写入文本到终端
  */
-function formatTerminal() {
+function write(text: string): void {
   if (!terminal) return
-  
-  try {
-    // 简化格式化操作，只做必要的清理
-    terminal.clear()
-    
-    // 确保光标可见
-    terminal.write('\x1b[?25h')
-    
-    // 滚动到最底部
-    scrollToBottom()
-  } catch (error) {
-    console.error('Failed to format terminal:', error)
-  }
+  terminal.write(text)
 }
 
 /**
- * 滚动到终端最底部
+ * 写入一行文本到终端
  */
-function scrollToBottom() {
+function writeln(text: string = ''): void {
   if (!terminal) return
-  try {
-    terminal.scrollToBottom()
-  } catch (error) {
-    console.error('Failed to scroll to bottom:', error)
-  }
+  terminal.writeln(text)
+}
+
+/**
+ * 写入带颜色的文本
+ */
+function writeColored(text: string, colorCode: string): void {
+  if (!terminal) return
+  writeln(`\x1b[${colorCode}m${text}\x1b[0m`)
+}
+
+/**
+ * 滚动到最底部
+ */
+function scrollToBottom(): void {
+  if (!terminal) return
+  terminal.scrollToBottom()
+}
+
+/**
+ * 清空终端
+ */
+function clearTerminal(): void {
+  if (!terminal) return
+  terminal.clear()
 }
 
 /**
  * 聚焦终端
  */
-function focusTerminal() {
+function focus(): void {
   if (!terminal) return
-  try {
-    terminal.focus()
-  } catch (error) {
-    console.error('Failed to focus terminal:', error)
-  }
+  terminal.focus()
 }
 
 /**
  * 显示提示符
  */
-function showPrompt() {
+function showPrompt(): void {
+  writeColored(TERMINAL_CONFIG.PROMPT, TERMINAL_CONFIG.PROMPT_COLOR)
+}
+
+/**
+ * 刷新显示（强制渲染）
+ */
+function refresh(): void {
   if (!terminal) return
-  try {
-    // 使用亮黄色，更加明显
-    terminal.write('\x1b[93m$\x1b[0m ')
-  } catch (error) {
-    console.error('Failed to show prompt:', error)
-  }
+  nextTick(() => {
+    terminal?.refresh(0, terminal.rows - 1)
+    scrollToBottom()
+  })
 }
 
-/**
- * 初始化终端
- */
-function initTerminal() {
-  if (!terminalRef.value || isInitialized) return
-
-  try {
-    // 创建终端实例
-    terminal = new Terminal({
-      fontSize: 14,
-      fontFamily: '"Courier New", Courier, monospace',
-      theme: {
-        background: '#0d0208',
-        foreground: '#e0e0e0',
-        cursor: '#00ff41',
-      },
-      cursorBlink: true,
-      cursorStyle: 'underline',
-      scrollback: 1000,
-      tabStopWidth: 4,
-    })
-
-    // 创建自适应插件
-    fitAddon = new FitAddon()
-    terminal.loadAddon(fitAddon)
-
-    // 挂载终端
-    terminal.open(terminalRef.value)
-    
-    // 延迟执行fit，确保DOM已完全渲染
-    setTimeout(async () => {
-      try {
-        if (!terminal || !fitAddon) {
-          console.error('Terminal or fitAddon not initialized')
-          return
-        }
-        
-        fitAddon.fit()
-        
-        // fit完成后，执行终端格式化操作
-        formatTerminal()
-        
-        // 然后输出开机动画
-        await showBootSequence()
-        
-        // 滚动到最底部
-        scrollToBottom()
-        
-        // 显示初始提示符
-        showPrompt()
-        
-        // 生成初始任务
-        missionStore.generateMissions(playerStore.player.level)
-        
-        // 初始化游戏
-        gameStore.initialize()
-        
-        // 添加键盘输入监听
-        terminal.onData(handleTerminalInput)
-        
-        // 聚焦终端
-        focusTerminal()
-      } catch (error) {
-        console.error('Failed to fit terminal:', error)
-      }
-    }, 100)
-
-    // 保存终端实例
-    terminalStore.setTerminalInstance(terminal)
-
-    // 初始化命令注册表
-    initCommands()
-
-    isInitialized = true
-  } catch (error) {
-    console.error('Failed to initialize terminal:', error)
-    isInitialized = false
-  }
-}
+// ============ 命令处理 ============
 
 /**
- * 初始化命令系统
+ * 初始化命令注册表
  */
-function initCommands() {
+function initCommands(): void {
   commandRegistry = new CommandRegistry()
 
-  // 注册基础命令
-  commandRegistry.register(helpCommand)
-  commandRegistry.register(clearCommand)
-  commandRegistry.register(infoCommand)
-  commandRegistry.register(gameCommand)
-  commandRegistry.register(versionCommand)
+  const commands = [
+    // 基础命令
+    helpCommand,
+    clearCommand,
+    infoCommand,
+    gameCommand,
+    versionCommand,
+    // 黑客命令
+    scanCommand,
+    connectCommand,
+    hackCommand,
+    // 任务命令
+    missionsCommand,
+    acceptCommand,
+    statusCommand,
+  ]
 
-  // 注册黑客命令
-  commandRegistry.register(scanCommand)
-  commandRegistry.register(connectCommand)
-  commandRegistry.register(hackCommand)
-
-  // 注册任务命令
-  commandRegistry.register(missionsCommand)
-  commandRegistry.register(acceptCommand)
-  commandRegistry.register(statusCommand)
+  commands.forEach(cmd => commandRegistry!.register(cmd))
 }
 
 /**
- * 显示开机日志动画
+ * 解析命令输入
  */
-async function showBootSequence() {
-  if (!terminal) return
+function parseInput(input: string): { name: string; args: string[] } {
+  const trimmed = input.trim()
+  if (!trimmed) return { name: '', args: [] }
   
-  try {
-    const bootLogs = [
-      { text: 'Initializing HackSim OS v0.1.0...', color: '36' }, // Cyan
-      { text: 'Loading kernel modules...', color: '36' },
-      { text: 'Mounting virtual filesystem...', color: '36' },
-      { text: 'Starting network services...', color: '36' },
-      { text: 'Establishing secure connection...', color: '36' },
-      { text: 'Loading user profile...', color: '36' },
-      { text: 'Initializing terminal interface...', color: '36' },
-      { text: 'Loading command modules...', color: '36' },
-      { text: 'Starting mission system...', color: '36' },
-      { text: 'Syncing with global network...', color: '36' },
-      { text: 'Loading player statistics...', color: '36' },
-      { text: 'Initializing security protocols...', color: '36' },
-      { text: 'System ready.', color: '32' }, // Green
-      { text: '', color: '' },
-      { text: 'Welcome to HackSim Terminal', color: '93' }, // Bright Yellow
-      { text: 'Type "help" to see available commands', color: '90' }, // Bright Black/Gray
-      { text: '', color: '' },
-    ]
-
-    for (const log of bootLogs) {
-      if (log.color) {
-        terminal.writeln(`\x1b[${log.color}m${log.text}\x1b[0m`)
-      } else {
-        terminal.writeln(log.text)
-      }
-      scrollToBottom()
-      await sleep(50) // 每行延迟50ms
-    }
-  } catch (error) {
-    console.error('Failed to show boot sequence:', error)
-  }
-}
-
-/**
- * 延迟函数
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-/**
- * 处理终端数据输入
- */
-function handleTerminalInput(data: string) {
-  if (!terminal) return
-
-  try {
-    // 处理回车键
-    if (data === '\r') {
-      terminal.writeln('')
-      
-      if (currentLine.trim()) {
-        // 添加到历史记录
-        commandHistory.push(currentLine)
-        
-        // 显示执行的命令（不重复显示提示符，因为用户输入时已经有提示符了）
-        terminal.writeln(`\x1b[90m${currentLine}\x1b[0m`)  // 使用灰色显示命令
-        
-        // 执行命令
-        executeCommand(currentLine)
-      } else {
-        // 空行 - 显示新提示符
-        showPrompt()
-        scrollToBottom()
-      }
-      
-      currentLine = ''
-    }
-    // 处理退格键
-    else if (data === '\u007F' || data === '\b') {
-      if (currentLine.length > 0) {
-        currentLine = currentLine.slice(0, -1)
-        // 让xterm.js处理退格的显示
-        terminal.write('\b \b')
-      }
-    }
-    // 处理可打印字符 - 让xterm.js处理显示
-    else if (data.charCodeAt(0) >= 32) {
-      currentLine += data
-      terminal.write(data)
-    }
-  } catch (error) {
-    console.error('Error handling terminal input:', error)
+  const parts = trimmed.split(/\s+/)
+  return {
+    name: parts[0].toLowerCase(),
+    args: parts.slice(1),
   }
 }
 
 /**
  * 执行命令
  */
-async function executeCommand(input: string) {
-  if (!commandRegistry || !terminal) return
+async function executeCommand(input: string): Promise<void> {
+  if (isProcessing || !terminal) return
+  
+  isProcessing = true
 
   try {
-    // 解析命令和参数
-    const parts = input.trim().split(/\s+/)
-    const commandName = parts[0].toLowerCase()
-    const args = parts.slice(1)
+    // 解析输入
+    const { name, args } = parseInput(input)
 
-    // 获取命令
-    const command = commandRegistry.get(commandName)
-
-    if (!command) {
-      terminal?.writeln(`Error: Command not found: ${commandName}`)
-      terminal?.writeln(`Type 'help' to see available commands.`)
-      // 输出空行和提示符
-      terminal?.writeln('')
+    // 空命令处理
+    if (!name) {
+      writeln()
       showPrompt()
       scrollToBottom()
       return
     }
 
-    // 验证命令参数
-    const validationResult = commandRegistry.validateCommand(command, args)
-    if (!validationResult.valid) {
-      terminal?.writeln(validationResult.message || 'Invalid command arguments')
-      terminal?.writeln('')
+    // 添加到历史记录
+    history.push(input)
+    historyIndex = history.length
+
+    // 获取命令
+    const command = commandRegistry?.get(name)
+
+    if (!command) {
+      writeln()
+      writeColored(`Error: Command not found: ${name}`, TERMINAL_CONFIG.ERROR_COLOR)
+      writeColored("Type 'help' to see available commands.", TERMINAL_CONFIG.COMMAND_COLOR)
+      writeln()
+      showPrompt()
+      scrollToBottom()
+      return
+    }
+
+    // 验证参数
+    const validation = commandRegistry?.validateCommand(command, args)
+    if (!validation?.valid) {
+      writeln()
+      writeColored(validation?.message || 'Invalid arguments', TERMINAL_CONFIG.ERROR_COLOR)
+      writeln()
       showPrompt()
       scrollToBottom()
       return
@@ -326,175 +213,317 @@ async function executeCommand(input: string) {
 
     // 执行命令
     const output = await (command as BaseCommand).execute(args)
+
+    // 处理输出
+    writeln()
     
-    // 处理特殊命令
     if (output === '__CLEAR__') {
-      // clear命令：清空终端后显示提示符
-      terminal.clear()
+      clearTerminal()
       showPrompt()
-      scrollToBottom()
-    } else if (output && output.trim() !== '') {
-      // 有输出：显示输出，然后显示提示符
-      terminal?.writeln(output)
-      terminal?.writeln('')
+    } else if (output?.trim()) {
+      writeln(output)
+      writeln()
       showPrompt()
-      scrollToBottom()
     } else {
-      // 无输出：直接显示提示符
-      terminal?.writeln('')
+      writeln()
       showPrompt()
-      scrollToBottom()
     }
+
+    scrollToBottom()
   } catch (error) {
-    // 错误处理：确保终端状态一致
-    try {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      terminal?.writeln(`Error: ${errorMessage}`)
-      terminal?.writeln('')
+    const message = error instanceof Error ? error.message : String(error)
+    writeln()
+    writeColored(`Error: ${message}`, TERMINAL_CONFIG.ERROR_COLOR)
+    writeln()
+    showPrompt()
+    scrollToBottom()
+  } finally {
+    isProcessing = false
+    refresh()
+  }
+}
+
+// ============ 输入处理 ============
+
+/**
+ * 处理用户输入
+ */
+function handleInput(data: string): void {
+  if (isProcessing || !terminal) return
+
+  // 回车键
+  if (data === '\r') {
+    if (inputBuffer.trim()) {
+      writeln()
+      writeColored(inputBuffer, TERMINAL_CONFIG.COMMAND_COLOR)
+      const command = inputBuffer
+      inputBuffer = ''
+      executeCommand(command)
+    } else {
+      writeln()
       showPrompt()
       scrollToBottom()
-    } catch (writeError) {
-      // 如果写入错误也无法处理，至少输出到控制台
-      console.error('Failed to write error to terminal:', writeError)
-      console.error('Original error:', error)
     }
+  }
+  // 退格键
+  else if (data === '\u007F' || data === '\b') {
+    if (inputBuffer.length > 0) {
+      inputBuffer = inputBuffer.slice(0, -1)
+      write('\b \b')
+    }
+  }
+  // 上下箭头（历史记录）
+  else if (data === '\x1b[A') {
+    // 上箭头
+    if (historyIndex > 0) {
+      historyIndex--
+      replaceInputWithHistory()
+    }
+  }
+  else if (data === '\x1b[B') {
+    // 下箭头
+    if (historyIndex < history.length - 1) {
+      historyIndex++
+      replaceInputWithHistory()
+    } else if (historyIndex === history.length - 1) {
+      historyIndex = history.length
+      inputBuffer = ''
+      clearCurrentLine()
+      showPrompt()
+    }
+  }
+  // 可打印字符
+  else if (data.charCodeAt(0) >= 32) {
+    inputBuffer += data
+    write(data)
   }
 }
 
 /**
- * 窗口大小变化时重新适配
+ * 清除当前输入行
  */
-function handleResize() {
-  // 防抖处理
-  if (resizeTimer !== null) {
-    clearTimeout(resizeTimer)
-  }
-  
-  resizeTimer = window.setTimeout(() => {
-    try {
-      fitAddon?.fit()
-    } catch (error) {
-      console.error('Failed to fit terminal on resize:', error)
-    }
-    resizeTimer = null
-  }, 250)
+function clearCurrentLine(): void {
+  if (!terminal) return
+  // 删除提示符和当前输入
+  write('\r\x1b[K')
+  showPrompt()
 }
 
+/**
+ * 用历史记录替换当前输入
+ */
+function replaceInputWithHistory(): void {
+  clearCurrentLine()
+  inputBuffer = history[historyIndex] || ''
+  write(inputBuffer)
+}
+
+// ============ 初始化 ============
+
+/**
+ * 创建终端实例
+ */
+function createTerminal(): void {
+  terminal = new Terminal({
+    fontSize: TERMINAL_CONFIG.FONT_SIZE,
+    fontFamily: TERMINAL_CONFIG.FONT_FAMILY,
+    theme: {
+      background: TERMINAL_CONFIG.BACKGROUND,
+      foreground: TERMINAL_CONFIG.FOREGROUND,
+      cursor: TERMINAL_CONFIG.CURSOR,
+    },
+    cursorBlink: true,
+    cursorStyle: 'block',
+    scrollback: TERMINAL_CONFIG.SCROLLBACK,
+  })
+
+  fitAddon = new FitAddon()
+  terminal.loadAddon(fitAddon)
+}
+
+/**
+ * 显示启动序列
+ */
+async function showBootSequence(): Promise<void> {
+  if (!terminal) return
+
+  const messages = [
+    'Initializing HackSim OS v0.1.0...',
+    'Loading system modules...',
+    'Starting services...',
+    'Establishing connections...',
+    'System ready.',
+    '',
+    'Welcome to HackSim Terminal',
+    "Type 'help' to see available commands",
+    '',
+  ]
+
+  for (const msg of messages) {
+    if (msg.startsWith('System ready.')) {
+      writeColored(msg, TERMINAL_CONFIG.SUCCESS_COLOR)
+    } else if (msg.startsWith('Welcome')) {
+      writeColored(msg, TERMINAL_CONFIG.PROMPT_COLOR)
+    } else if (msg.startsWith("Type")) {
+      writeColored(msg, TERMINAL_CONFIG.COMMAND_COLOR)
+    } else {
+      writeColored(msg, '36')
+    }
+    writeln()
+    scrollToBottom()
+    await delay(50)
+  }
+}
+
+/**
+ * 延迟函数
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * 初始化终端
+ */
+async function init(): Promise<void> {
+  if (!containerRef.value) return
+
+  try {
+    // 创建终端
+    createTerminal()
+    
+    // 挂载到DOM
+    if (terminal) {
+      terminal.open(containerRef.value)
+      
+      // 保存到store
+      terminalStore.setTerminalInstance(terminal)
+      
+      // 初始化命令
+      initCommands()
+      
+      // 等待DOM渲染完成
+      await nextTick()
+      
+      // 适配尺寸
+      fitAddon?.fit()
+      
+      // 清空并显示启动序列
+      clearTerminal()
+      await showBootSequence()
+      
+      // 显示初始提示符
+      showPrompt()
+      scrollToBottom()
+      
+      // 初始化游戏系统
+      missionStore.generateMissions(playerStore.player.level)
+      gameStore.initialize()
+      
+      // 绑定输入处理
+      terminal.onData(handleInput)
+      
+      // 聚焦终端
+      focus()
+    }
+  } catch (error) {
+    console.error('Failed to initialize terminal:', error)
+  }
+}
+
+/**
+ * 处理窗口大小变化
+ */
+function handleResize(): void {
+  if (resizeTimeout) clearTimeout(resizeTimeout)
+  
+  resizeTimeout = window.setTimeout(() => {
+    fitAddon?.fit()
+    refresh()
+  }, 200) as unknown as number
+}
+
+// ============ 生命周期 ============
+
 onMounted(() => {
-  initTerminal()
+  init()
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  // 清理resize定时器
-  if (resizeTimer !== null) {
-    clearTimeout(resizeTimer)
-    resizeTimer = null
-  }
+  // 清理定时器
+  if (resizeTimeout) clearTimeout(resizeTimeout)
   
+  // 移除监听器
   window.removeEventListener('resize', handleResize)
   
-  // 安全清理终端
-  if (terminal) {
-    try {
-      terminal.dispose()
-    } catch (error) {
-      console.error('Failed to dispose terminal:', error)
-    }
-    terminal = null
-  }
-  
-  isInitialized = false
+  // 销毁终端
+  terminal?.dispose()
+  terminal = null
 })
 </script>
 
 <style scoped lang="scss">
 .terminal-container {
-  position: relative;
   width: 100%;
   height: 100%;
   background-color: var(--bg-darker);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.terminal {
-  flex: 1;
-  padding: var(--spacing-md);
-  // 让 xterm.js 自己管理滚动
-  // 添加触摸优化
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
   cursor: text;
+
+  :deep(.xterm) {
+    height: 100% !important;
+    padding: var(--spacing-md) !important;
+  }
+
+  :deep(.xterm-viewport) {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-dark) var(--bg-dark);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  :deep(.xterm-viewport::-webkit-scrollbar) {
+    width: 8px;
+  }
+
+  :deep(.xterm-viewport::-webkit-scrollbar-track) {
+    background: var(--bg-dark);
+  }
+
+  :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
+    background: var(--primary-dark);
+    border-radius: 4px;
+  }
+
+  :deep(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
+    background: var(--primary);
+  }
 
   // 移动端优化
   @media (max-width: 640px) {
-    padding: var(--spacing-sm);
-    font-size: 13px; // 稍微减小字体以适应小屏幕
+    :deep(.xterm) {
+      padding: var(--spacing-sm) !important;
+      font-size: 12px !important;
+    }
   }
 
-  // 超小屏幕优化
   @media (max-width: 480px) {
-    padding: var(--spacing-xs);
+    :deep(.xterm) {
+      padding: var(--spacing-xs) !important;
+      font-size: 11px !important;
+    }
   }
-}
 
-// 覆盖 xterm.js 默认样式
-:deep(.xterm) {
-  padding: 0 !important;
-  height: 100% !important;
-}
-
-:deep(.xterm-viewport) {
-  scrollbar-width: thin;
-  scrollbar-color: var(--primary-dark) var(--bg-dark);
-  // 移动端优化
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-}
-
-:deep(.xterm-viewport::-webkit-scrollbar) {
-  width: 8px;
-}
-
-:deep(.xterm-viewport::-webkit-scrollbar-track) {
-  background: var(--bg-dark);
-}
-
-:deep(.xterm-viewport::-webkit-scrollbar-thumb) {
-  background: var(--primary-dark);
-  border-radius: 4px;
-}
-
-:deep(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
-  background: var(--primary);
-}
-
-// 移动端优化
-@media (max-width: 640px) {
-  .terminal {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .terminal {
-    font-size: 11px;
-    padding: var(--spacing-xs);
-  }
-}
-
-// 横屏模式优化
-@media (max-height: 600px) and (orientation: landscape) {
-  .terminal-container {
+  // 横屏模式
+  @media (max-height: 600px) and (orientation: landscape) {
     min-height: 300px;
-  }
 
-  .terminal {
-    padding: var(--spacing-sm);
+    :deep(.xterm) {
+      padding: var(--spacing-sm) !important;
+    }
   }
 }
 </style>
