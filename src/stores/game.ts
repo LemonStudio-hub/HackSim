@@ -7,6 +7,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { GAME_CONFIG } from '../constants/game'
 import { drawBorder, drawTitle, drawSeparator, drawKeyValue } from '../utils/format'
+import { saveGame, loadGame, SaveData, hasSave, deleteSave } from '../utils/save'
+import { exportPlayer, importPlayer } from './player'
+import { exportMissionData, importMissionData } from './mission'
 
 export const useGameStore = defineStore('game', () => {
   // ========== 状态 ==========
@@ -24,7 +27,10 @@ export const useGameStore = defineStore('game', () => {
   const playTime = ref(0)
 
   /** 播放时间计时器 */
-  const playTimeTimer = ref<number | null>(null)
+  const playTimeTimer = ref<ReturnType<typeof setInterval> | null>(null)
+
+  /** 自动保存计时器 */
+  const autoSaveTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
   // ========== 计算属性 ==========
 
@@ -50,11 +56,12 @@ export const useGameStore = defineStore('game', () => {
    */
   function initialize(): void {
     if (isInitialized.value) return
-    
+
     isInitialized.value = true
     isRunning.value = true
     startTime.value = Date.now()
     startPlayTimeTimer()
+    startAutoSaveTimer()
   }
   
   /**
@@ -74,6 +81,7 @@ export const useGameStore = defineStore('game', () => {
   function pause(): void {
     isRunning.value = false
     stopPlayTimeTimer()
+    stopAutoSaveTimer()
   }
 
   /**
@@ -82,6 +90,7 @@ export const useGameStore = defineStore('game', () => {
   function resume(): void {
     isRunning.value = true
     startPlayTimeTimer()
+    startAutoSaveTimer()
   }
 
   /**
@@ -90,6 +99,9 @@ export const useGameStore = defineStore('game', () => {
   function stop(): void {
     isRunning.value = false
     stopPlayTimeTimer()
+    stopAutoSaveTimer()
+    // 停止时自动保存
+    saveGameToStorage()
   }
 
   /**
@@ -101,6 +113,9 @@ export const useGameStore = defineStore('game', () => {
     startTime.value = null
     playTime.value = 0
     stopPlayTimeTimer()
+    stopAutoSaveTimer()
+    // 重置时删除存档
+    deleteGameSave()
   }
 
   /**
@@ -111,7 +126,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
 
-    playTimeTimer.value = window.setInterval(() => {
+    playTimeTimer.value = setInterval(() => {
       playTime.value++
     }, 1000)
   }
@@ -124,6 +139,89 @@ export const useGameStore = defineStore('game', () => {
       clearInterval(playTimeTimer.value)
       playTimeTimer.value = null
     }
+  }
+
+  /**
+   * 开始自动保存计时器
+   */
+  function startAutoSaveTimer(): void {
+    if (autoSaveTimer.value) {
+      return
+    }
+
+    autoSaveTimer.value = setInterval(() => {
+      saveGameToStorage()
+    }, GAME_CONFIG.AUTO_SAVE_INTERVAL)
+  }
+
+  /**
+   * 停止自动保存计时器
+   */
+  function stopAutoSaveTimer(): void {
+    if (autoSaveTimer.value) {
+      clearInterval(autoSaveTimer.value)
+      autoSaveTimer.value = null
+    }
+  }
+
+  /**
+   * 保存游戏到存储
+   * @returns 是否保存成功
+   */
+  function saveGameToStorage(): boolean {
+    const saveData: SaveData = {
+      player: exportPlayer(),
+      availableMissions: exportMissionData().available,
+      activeMission: exportMissionData().active,
+      completedMissions: exportMissionData().completed,
+      playTime: playTime.value,
+      timestamp: Date.now(),
+      version: GAME_CONFIG.VERSION,
+    }
+
+    return saveGame(saveData)
+  }
+
+  /**
+   * 从存储加载游戏
+   * @returns 是否加载成功
+   */
+  function loadGameFromStorage(): boolean {
+    const data = loadGame()
+    if (!data) {
+      return false
+    }
+
+    // 导入玩家数据
+    importPlayer(data.player)
+
+    // 导入任务数据
+    importMissionData({
+      available: data.availableMissions,
+      active: data.activeMission,
+      completed: data.completedMissions,
+    })
+
+    // 恢复游戏时间
+    playTime.value = data.playTime
+
+    return true
+  }
+
+  /**
+   * 检查是否存在存档
+   * @returns 是否存在存档
+   */
+  function checkHasSave(): boolean {
+    return hasSave()
+  }
+
+  /**
+   * 删除存档
+   * @returns 是否删除成功
+   */
+  function deleteGameSave(): boolean {
+    return deleteSave()
   }
 
   /**
@@ -157,6 +255,10 @@ export const useGameStore = defineStore('game', () => {
     resume,
     stop,
     reset,
+    saveGameToStorage,
+    loadGameFromStorage,
+    checkHasSave,
+    deleteGameSave,
     getGameInfo,
   }
 })

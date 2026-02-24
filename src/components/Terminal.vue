@@ -11,7 +11,7 @@ import { usePlayerStore } from '../stores/player'
 import { useMissionStore } from '../stores/mission'
 import { useGameStore } from '../stores/game'
 import { CommandRegistry } from '../modules/commands'
-import { NETWORK_CONFIG } from '../constants/game'
+import { NETWORK_CONFIG, BOOT_CONFIG } from '../constants/game'
 import { sleep } from '../utils/helpers'
 import { helpCommand, clearCommand, infoCommand, gameCommand, versionCommand } from '../modules/commands/basic'
 import { scanCommand, connectCommand, hackCommand } from '../modules/commands/hack'
@@ -29,7 +29,7 @@ const TERMINAL_CONFIG = {
   FOREGROUND: '#e0e0e0',
   CURSOR: '#00ff00', // 亮绿色光标，更明显
   CURSOR_STYLE: 'bar', // 竖线光标，更容易定位
-  SCROLLBACK: 1000,
+  SCROLLBACK: 5000, // 增加滚动缓冲区大小
 } as const
 
 // ============ 状态 ============
@@ -52,7 +52,7 @@ const history: string[] = []
 let historyIndex = -1
 
 // 清理
-let resizeTimeout: number | null = null
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null
 
 // ============ 核心方法 ============
 
@@ -81,11 +81,29 @@ function writeColored(text: string, colorCode: string): void {
 }
 
 /**
+ * 写入并自动滚动到底部
+ */
+function writeAndScroll(text: string): void {
+  write(text)
+  scrollToBottom()
+}
+
+/**
  * 滚动到最底部
  */
 function scrollToBottom(): void {
   if (!terminal) return
+
+  // 强制滚动到底部
   terminal.scrollToBottom()
+
+  // 额外的安全措施：确保视口在底部
+  const viewport = terminal.buffer.active.viewportY;
+  const bufferHeight = terminal.buffer.active.length - terminal.rows;
+
+  if (viewport < bufferHeight) {
+    terminal.scrollToBottom();
+  }
 }
 
 /**
@@ -229,6 +247,8 @@ async function executeCommand(input: string): Promise<void> {
       showPrompt()
     }
 
+    // 等待 DOM 更新后再滚动
+    await nextTick()
     scrollToBottom()
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -236,6 +256,9 @@ async function executeCommand(input: string): Promise<void> {
     writeColored(`Error: ${message}`, TERMINAL_CONFIG.ERROR_COLOR)
     writeln()
     showPrompt()
+
+    // 等待 DOM 更新后再滚动
+    await nextTick()
     scrollToBottom()
   } finally {
     isProcessing = false
@@ -337,6 +360,10 @@ function createTerminal(): void {
     cursorStyle: TERMINAL_CONFIG.CURSOR_STYLE as 'block' | 'underline' | 'bar',
     scrollback: TERMINAL_CONFIG.SCROLLBACK,
     cursorWidth: 2, // 光标宽度
+    scrollSensitivity: 5, // 鼠标滚轮敏感度
+    allowProposedApi: true, // 允许使用提议的 API
+    disableStdin: false, // 允许标准输入
+    rightClickSelectsWord: true, // 右键选择单词
   })
 
   fitAddon = new FitAddon()
@@ -349,79 +376,29 @@ function createTerminal(): void {
 async function showBootSequence(): Promise<void> {
   if (!terminal) return
 
-  // 生成随机 IP 地址
-  const range = NETWORK_CONFIG.COMMON_RANGES[Math.floor(Math.random() * NETWORK_CONFIG.COMMON_RANGES.length)]
-  const suffix = Math.floor(Math.random() * 254) + 1
-  const connectionIP = `${range}${suffix}`
-
-  const bootMessages = [
-    { text: '[BOOT] Starting HackSim OS v0.1.0...', color: '36', delay: 30 },
-    { text: '[SYSTEM] Detecting hardware configuration...', color: '36', delay: 40 },
-    { text: '[SYSTEM] CPU: Quantum Processor @ 4.2GHz', color: '90', delay: 20 },
-    { text: '[SYSTEM] RAM: 32TB Quantum Memory', color: '90', delay: 20 },
-    { text: '[SYSTEM] Storage: Neural Drive - ONLINE', color: '90', delay: 20 },
-    { text: '[KERNEL] Loading kernel modules...', color: '36', delay: 50 },
-    { text: '[KERNEL] Network stack initialized', color: '90', delay: 20 },
-    { text: '[KERNEL] File system mounted', color: '90', delay: 20 },
-    { text: '[KERNEL] Security protocols loaded', color: '90', delay: 20 },
-    { text: '[NETWORK] Establishing secure connections...', color: '36', delay: 60 },
-    { text: `[NETWORK] Connection established to: ${connectionIP}`, color: '90', delay: 30 },
-    { text: '[NETWORK] Encryption: AES-256-GCM', color: '90', delay: 20 },
-    { text: '[NETWORK] Tunnel active: Secure', color: '90', delay: 20 },
-    { text: '[SERVICES] Loading system services...', color: '36', delay: 50 },
-    { text: '[SERVICES] Daemon: hacknetd - STARTED', color: '90', delay: 25 },
-    { text: '[SERVICES] Daemon: missiond - STARTED', color: '90', delay: 25 },
-    { text: '[SERVICES] Daemon: loggerd - STARTED', color: '90', delay: 25 },
-    { text: '[SERVICES] Daemon: terminald - STARTED', color: '90', delay: 25 },
-    { text: '[INTERFACE] Initializing terminal interface...', color: '36', delay: 50 },
-    { text: '[INTERFACE] Display: 1080p High-DPI', color: '90', delay: 20 },
-    { text: '[INTERFACE] Color mode: Full RGB', color: '90', delay: 20 },
-    { text: '[INTERFACE] Font: Hack Nerd Font', color: '90', delay: 20 },
-    { text: '[MODULES] Loading command modules...', color: '36', delay: 50 },
-    { text: '[MODULES] Loaded: basic commands (5)', color: '90', delay: 20 },
-    { text: '[MODULES] Loaded: hacking commands (3)', color: '90', delay: 20 },
-    { text: '[MODULES] Loaded: mission commands (3)', color: '90', delay: 20 },
-    { text: '[MISSION] Initializing mission system...', color: '36', delay: 50 },
-    { text: '[MISSION] Connecting to global network...', color: '90', delay: 30 },
-    { text: '[MISSION] Syncing with mission database...', color: '90', delay: 40 },
-    { text: '[MISSION] Database synchronized', color: '90', delay: 20 },
-    { text: '[PLAYER] Loading player profile...', color: '36', delay: 40 },
-    { text: '[PLAYER] Profile: Anonymous', color: '90', delay: 20 },
-    { text: '[PLAYER] Level: 1', color: '90', delay: 20 },
-    { text: '[PLAYER] Reputation: 0', color: '90', delay: 20 },
-    { text: '[PLAYER] Credits: 1000', color: '90', delay: 20 },
-    { text: '[SECURITY] Initializing security protocols...', color: '36', delay: 50 },
-    { text: '[SECURITY] Firewall: ACTIVE', color: '90', delay: 20 },
-    { text: '[SECURITY] Intrusion detection: ENABLED', color: '90', delay: 20 },
-    { text: '[SECURITY] Encryption keys: ROTATED', color: '90', delay: 20 },
-    { text: '[SECURITY] Anonymity layer: ACTIVE', color: '90', delay: 20 },
-    { text: '[SYSTEM] Running diagnostics...', color: '36', delay: 60 },
-    { text: '[SYSTEM] Memory integrity: OK', color: '32', delay: 20 },
-    { text: '[SYSTEM] Network connectivity: OK', color: '32', delay: 20 },
-    { text: '[SYSTEM] Security status: OK', color: '32', delay: 20 },
-    { text: '[SYSTEM] All systems operational', color: '32', delay: 30 },
-    { text: '', color: '', delay: 0 },
-    { text: '========================================', color: '90', delay: 0 },
-    { text: '     HackSim Terminal v0.1.0', color: '93', delay: 0 },
-    { text: '========================================', color: '90', delay: 0 },
-    { text: '', color: '', delay: 0 },
-    { text: 'System ready. Welcome, hacker.', color: '32', delay: 30 },
-    { text: '', color: '', delay: 0 },
-    { text: 'Quick Start:', color: '36', delay: 20 },
-    { text: '  Type "help"      - See all available commands', color: '90', delay: 20 },
-    { text: '  Type "missions"  - View available missions', color: '90', delay: 20 },
-    { text: '  Type "info"      - Check your stats', color: '90', delay: 20 },
-    { text: '', color: '', delay: 0 },
-  ]
+  // 使用配置文件中的启动消息
+  const bootMessages = BOOT_CONFIG.MESSAGES
+  const speedMultiplier = BOOT_CONFIG.SPEED_MULTIPLIER
 
   for (const msg of bootMessages) {
     if (msg.text) {
       writeColored(msg.text, msg.color)
       writeln()
     }
+
+    // 等待 DOM 更新后再滚动
+    await nextTick()
     scrollToBottom()
-    if (msg.delay > 0) {
-      await sleep(msg.delay)
+
+    // 应用速度倍数
+    const delay = msg.delay * speedMultiplier
+    if (delay > 0) {
+      await sleep(delay)
+    }
+
+    // 如果标记了暂停点，额外暂停一下让用户看到
+    if (msg.pause) {
+      await sleep(500)
     }
   }
 }
@@ -455,11 +432,17 @@ async function init(): Promise<void> {
       // 清空并显示启动序列
       clearTerminal()
       await showBootSequence()
-      
+
+      // 短暂延迟让用户看到最后的输出
+      await sleep(300)
+
       // 显示初始提示符
       showPrompt()
+
+      // 等待 DOM 更新后滚动到底部
+      await nextTick()
       scrollToBottom()
-      
+
       // 初始化游戏系统
       missionStore.generateMissions(playerStore.player.level)
       gameStore.initialize()
@@ -481,10 +464,10 @@ async function init(): Promise<void> {
 function handleResize(): void {
   if (resizeTimeout) clearTimeout(resizeTimeout)
   
-  resizeTimeout = window.setTimeout(() => {
+  resizeTimeout = setTimeout(() => {
     fitAddon?.fit()
     refresh()
-  }, 200) as unknown as number
+  }, 200)
 }
 
 // ============ 生命周期 ============
@@ -525,8 +508,6 @@ onUnmounted(() => {
     overflow-x: hidden !important;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-dark) var(--bg-dark);
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
   }
 
   :deep(.xterm-viewport::-webkit-scrollbar) {

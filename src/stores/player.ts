@@ -58,20 +58,21 @@ export const usePlayerStore = defineStore('player', () => {
     
     player.value.exp += amount
   
-    // 检查是否升级
-    while (player.value.level > 0) {
+    // 检查是否升级（可连续升级多级）
+    do {
       const currentLevelExpNeeded = Math.floor(
         EXP_CONFIG.BASE_EXP_REQUIREMENT *
           Math.pow(EXP_CONFIG.EXP_MULTIPLIER, player.value.level - 1)
       )
       
+      // 只有经验值足够时才升级
       if (player.value.exp >= currentLevelExpNeeded) {
-        player.value.level++
         player.value.exp -= currentLevelExpNeeded
+        player.value.level++
       } else {
         break
       }
-    }
+    } while (true)
   }
   /**
    * 添加信用点
@@ -147,3 +148,21 @@ export const usePlayerStore = defineStore('player', () => {
     getPlayerInfo,
   }
 })
+
+/**
+ * 导出玩家数据（用于存档）
+ * @returns 玩家数据的副本
+ */
+export function exportPlayer(): Player {
+  const store = usePlayerStore()
+  return { ...store.player }
+}
+
+/**
+ * 导入玩家数据（用于读档）
+ * @param data 玩家数据
+ */
+export function importPlayer(data: Player): void {
+  const store = usePlayerStore()
+  store.player = { ...data }
+}

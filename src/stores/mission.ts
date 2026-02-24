@@ -7,8 +7,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Mission } from '../types'
 import { nanoid } from 'nanoid'
-import { MISSION_CONFIG, NETWORK_CONFIG } from '../constants/game'
 import { drawBorder, drawTitle, drawSeparator, drawListItem, drawError, drawKeyValue } from '../utils/format'
+import { generateMissionList } from '../modules/missions/generator'
 
 export const useMissionStore = defineStore('mission', () => {
   // ========== 状态 ==========
@@ -32,63 +32,14 @@ export const useMissionStore = defineStore('mission', () => {
   // ========== 私有方法 ==========
 
   /**
-   * 生成随机 IP 地址
-   * @returns IP 地址字符串
+   * 验证任务ID格式
+   * @param missionId 任务 ID
+   * @returns 是否有效
    */
-  function generateRandomIP(): string {
-    const range = NETWORK_CONFIG.COMMON_RANGES[
-      Math.floor(Math.random() * NETWORK_CONFIG.COMMON_RANGES.length)
-    ]
-    const suffix = Math.floor(Math.random() * 254) + 1
-    return `${range}${suffix}`
-  }
-
-  /**
-   * 生成任务标题
-   * @param difficulty 任务难度
-   * @returns 任务标题
-   */
-  function generateMissionTitle(difficulty: number): string {
-    const titles = [
-      ['Simple Recon', 'Basic Infiltration', 'Data Collection'],
-      ['Server Breach', 'Password Crack', 'Port Scan'],
-      ['Network Intrusion', 'Database Hack', 'System Exploit'],
-      ['Corporate Espionage', 'Advanced Penetration', 'Security Bypass'],
-      ['Master Heist', 'Legendary Hack', 'Ultimate Breach'],
-    ]
-    const levelTitles = titles[difficulty - 1]
-    return levelTitles[Math.floor(Math.random() * levelTitles.length)]
-  }
-
-  /**
-   * 生成任务描述
-   * @param difficulty 任务难度
-   * @returns 任务描述
-   */
-  function generateMissionDescription(difficulty: number): string {
-    const descriptions = [
-      'A simple reconnaissance mission.',
-      'Breach a basic server and extract data.',
-      'Penetrate a network and steal sensitive information.',
-      'Execute a sophisticated attack on a corporate system.',
-      'An impossible mission requiring elite skills.',
-    ]
-    return descriptions[difficulty - 1]
-  }
-
-  /**
-   * 生成任务奖励
-   * @param difficulty 任务难度
-   * @returns 奖励对象
-   */
-  function generateMissionReward(difficulty: number): { exp: number; credits: number } {
-    const baseExp = 100
-    const baseCredits = 200
-    const multiplier = Math.pow(2, difficulty - 1)
-    return {
-      exp: baseExp * multiplier,
-      credits: baseCredits * multiplier,
-    }
+  function isValidMissionId(missionId: string): boolean {
+    // nanoid 生成的 ID 是字母数字混合，通常长度为 21
+    const missionIdRegex = /^[A-Za-z0-9_-]{21}$/
+    return missionIdRegex.test(missionId)
   }
 
   // ========== 公共方法 ==========
@@ -98,28 +49,7 @@ export const useMissionStore = defineStore('mission', () => {
    * @param playerLevel 玩家等级
    */
   function generateMissions(playerLevel: number): void {
-    available.value = []
-
-    // 根据等级生成任务
-    const missionCount = MISSION_CONFIG.MISSIONS_PER_LEVEL + Math.floor(playerLevel / 2)
-
-    for (let i = 0; i < missionCount; i++) {
-      // 难度不超过玩家等级 + 2
-      const maxDifficulty = Math.min(MISSION_CONFIG.MAX_DIFFICULTY, playerLevel + 2)
-      const difficulty = Math.floor(Math.random() * maxDifficulty) + 1
-
-      const mission: Mission = {
-        id: nanoid(),
-        title: generateMissionTitle(difficulty),
-        description: generateMissionDescription(difficulty),
-        target: generateRandomIP(),
-        difficulty,
-        reward: generateMissionReward(difficulty),
-        status: 'available',
-      }
-
-      available.value.push(mission)
-    }
+    available.value = generateMissionList(playerLevel)
   }
 
   /**
@@ -128,6 +58,11 @@ export const useMissionStore = defineStore('mission', () => {
    * @returns 是否成功接取
    */
   function acceptMission(missionId: string): boolean {
+    // 验证任务ID格式（如果不是数字索引）
+    if (isNaN(parseInt(missionId)) && !isValidMissionId(missionId)) {
+      return false
+    }
+
     const missionIndex = available.value.findIndex((m) => m.id === missionId)
 
     if (missionIndex === -1) {
@@ -175,17 +110,22 @@ export const useMissionStore = defineStore('mission', () => {
    * @returns 任务信息字符串
    */
   function getMissionInfo(missionId: string): string | null {
+    // 验证任务ID格式
+    if (isNaN(parseInt(missionId)) && !isValidMissionId(missionId)) {
+      return null
+    }
+
     const mission =
       available.value.find((m) => m.id === missionId) ||
       (active.value?.id === missionId ? active.value : null) ||
       completed.value.find((m) => m.id === missionId)
-  
+
     if (!mission) {
       return null
     }
-  
+
     const difficultyStars = '★'.repeat(mission.difficulty) + '☆'.repeat(5 - mission.difficulty)
-  
+
     const content: string[] = []
     content.push(drawTitle(`MISSION: ${mission.title}`, 0))
     content.push(drawSeparator())
@@ -197,7 +137,7 @@ export const useMissionStore = defineStore('mission', () => {
     content.push(drawListItem('REWARDS:', ''))
     content.push(drawListItem('EXP:', mission.reward.exp.toString()))
     content.push(drawListItem('Credits:', mission.reward.credits.toString()))
-  
+
     return drawBorder(content)
   }
   /**
@@ -278,3 +218,35 @@ export const useMissionStore = defineStore('mission', () => {
     reset,
   }
 })
+
+/**
+ * 导出任务数据（用于存档）
+ * @returns 任务数据的副本
+ */
+export function exportMissionData(): {
+  available: Mission[]
+  active: Mission | null
+  completed: Mission[]
+} {
+  const store = useMissionStore()
+  return {
+    available: store.available.map(m => ({ ...m })),
+    active: store.active ? { ...store.active } : null,
+    completed: store.completed.map(m => ({ ...m })),
+  }
+}
+
+/**
+ * 导入任务数据（用于读档）
+ * @param data 任务数据
+ */
+export function importMissionData(data: {
+  available: Mission[]
+  active: Mission | null
+  completed: Mission[]
+}): void {
+  const store = useMissionStore()
+  store.available = data.available.map(m => ({ ...m }))
+  store.active = data.active ? { ...data.active } : null
+  store.completed = data.completed.map(m => ({ ...m }))
+}

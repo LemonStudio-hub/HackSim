@@ -19,6 +19,101 @@ import {
 } from '../../utils/format'
 
 /**
+ * 命令分类信息
+ */
+interface CommandCategory {
+  name: string
+  commands: Array<{ name: string; usage: string; description: string }>
+}
+
+/**
+ * 获取所有命令分类信息
+ * @returns 命令分类数组
+ */
+function getCommandCategories(): CommandCategory[] {
+  return [
+    {
+      name: 'Basic Commands',
+      commands: [
+        { name: 'help', usage: 'help [command]', description: 'Show available commands' },
+        { name: 'clear', usage: 'clear', description: 'Clear the terminal screen' },
+        { name: 'info', usage: 'info', description: 'Show player information' },
+        { name: 'game', usage: 'game', description: 'Show game information' },
+        { name: 'version', usage: 'version', description: 'Show version information' },
+      ],
+    },
+    {
+      name: 'Hacking Commands',
+      commands: [
+        { name: 'scan', usage: 'scan <IP>', description: 'Scan a target IP address' },
+        { name: 'connect', usage: 'connect <IP>', description: 'Connect to a target system' },
+        { name: 'hack', usage: 'hack <IP>', description: 'Hack a target system' },
+      ],
+    },
+    {
+      name: 'Mission Commands',
+      commands: [
+        { name: 'missions', usage: 'missions', description: 'Show available missions' },
+        { name: 'accept', usage: 'accept <ID|index>', description: 'Accept a mission by ID or index' },
+        { name: 'status', usage: 'status', description: 'Show current mission status' },
+      ],
+    },
+  ]
+}
+
+/**
+ * 生成帮助信息
+ * @param specificCommand 特定命令名称（可选）
+ * @returns 帮助信息字符串
+ */
+function generateHelpInfo(specificCommand?: string): string {
+  const categories = getCommandCategories()
+
+  // 如果指定了命令，显示该命令的详细信息
+  if (specificCommand) {
+    const commandName = specificCommand.toLowerCase()
+    let found = false
+    let result = drawHeader(`COMMAND HELP: ${commandName.toUpperCase()}`) + '\n\n'
+
+    for (const category of categories) {
+      const command = category.commands.find(cmd => cmd.name === commandName)
+      if (command) {
+        found = true
+        result += drawSubHeader(`${category.name}:\n`)
+        result += drawListItem('Command:', command.name)
+        result += drawListItem('Usage:', command.usage)
+        result += drawListItem('Description:', command.description)
+        break
+      }
+    }
+
+    if (!found) {
+      result += drawError(`Command "${commandName}" not found.`)
+      result += '\n\n' + drawSubHeader('Usage:')
+      result += 'Use "help" to see all available commands.'
+    }
+
+    return result
+  }
+
+  // 显示所有命令
+  let result = drawHeader('AVAILABLE COMMANDS') + '\n\n'
+
+  for (const category of categories) {
+    result += drawSubHeader(`${category.name}:\n`)
+    for (const command of category.commands) {
+      result += drawListItem(command.name, command.usage)
+    }
+    result += '\n'
+  }
+
+  result += drawSubHeader('Usage:')
+  result += 'Use "help <command>" for more information about a specific command.'
+
+  return result
+}
+
+/**
  * Help 命令 - 显示帮助信息
  */
 export const helpCommand: BaseCommand = {
@@ -29,54 +124,7 @@ export const helpCommand: BaseCommand = {
     maxArgs: 1,
   },
   async execute(args: string[]): Promise<string> {
-    if (args.length > 0) {
-      // 显示特定命令的帮助
-      const commandName = args[0].toLowerCase()
-      
-      // 由于我们无法直接访问已注册的命令，这里显示所有命令的基本信息
-      return drawHeader(`COMMAND HELP: ${commandName.toUpperCase()}`) + `
-
-${drawSubHeader('Basic Commands:')}
-${drawListItem('help', 'Show this help message')}
-${drawListItem('clear', 'Clear the terminal screen')}
-${drawListItem('info', 'Show player information')}
-${drawListItem('game', 'Show game information')}
-${drawListItem('version', 'Show version information')}
-
-${drawSubHeader('Hacking Commands:')}
-${drawListItem('scan <IP>', 'Scan a target IP address')}
-${drawListItem('connect <IP>', 'Connect to a target system')}
-${drawListItem('hack <IP>', 'Hack a target system')}
-
-${drawSubHeader('Mission Commands:')}
-${drawListItem('missions', 'Show available missions')}
-${drawListItem('accept <ID>', 'Accept a mission by ID or index')}
-${drawListItem('status', 'Show current mission status')}
-
-${drawError('Note: Detailed command help is not implemented yet.')}`
-    }
-
-    return drawHeader('AVAILABLE COMMANDS') + `
-
-${drawSubHeader('Basic Commands:')}
-${drawListItem('help', 'Show this help message')}
-${drawListItem('clear', 'Clear the terminal screen')}
-${drawListItem('info', 'Show player information')}
-${drawListItem('game', 'Show game information')}
-${drawListItem('version', 'Show version information')}
-
-${drawSubHeader('Hacking Commands:')}
-${drawListItem('scan <IP>', 'Scan a target IP address')}
-${drawListItem('connect <IP>', 'Connect to a target system')}
-${drawListItem('hack <IP>', 'Hack a target system')}
-
-${drawSubHeader('Mission Commands:')}
-${drawListItem('missions', 'Show available missions')}
-${drawListItem('accept <ID>', 'Accept a mission by ID or index')}
-${drawListItem('status', 'Show current mission status')}
-
-${drawSubHeader('Usage:')}
-Use "help <command>" for more information about a specific command.`
+    return generateHelpInfo(args[0])
   },
 }
 

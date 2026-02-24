@@ -20,26 +20,73 @@ import {
 } from '../../utils/format'
 
 /**
+ * 基于种子的伪随机数生成器
+ * 使用简单的线性同余生成器（LCG）
+ */
+class SeededRandom {
+  private seed: number
+
+  constructor(seed: number) {
+    this.seed = seed
+  }
+
+  /**
+   * 生成 0-1 之间的随机数
+   */
+  next(): number {
+    // 使用 LCG 算法：X(n+1) = (a * X(n) + c) mod m
+    // 参数来自 GCC 的 LCG 实现
+    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff
+    return this.seed / 0x7fffffff
+  }
+
+  /**
+   * 生成指定范围内的随机整数
+   */
+  nextInt(min: number, max: number): number {
+    return Math.floor(this.next() * (max - min + 1)) + min
+  }
+
+  /**
+   * 从数组中随机选择一个元素
+   */
+  pick<T>(array: T[]): T {
+    return array[this.nextInt(0, array.length - 1)]
+  }
+
+  /**
+   * 从数组中随机选择多个不重复的元素
+   */
+  pickMultiple<T>(array: T[], count: number): T[] {
+    const result: T[] = []
+    const copy = [...array]
+    for (let i = 0; i < count && copy.length > 0; i++) {
+      const index = this.nextInt(0, copy.length - 1)
+      result.push(copy.splice(index, 1)[0])
+    }
+    return result
+  }
+}
+
+/**
  * 扫描网络节点信息
- * @param _target 目标 IP（未使用，用于生成随机数据）
+ * @param target 目标 IP
  * @returns 节点信息
  */
-function scanTarget(_target: string): {
+function scanTarget(target: string): {
   name: string
   ports: number[]
   security: number
   services: string[]
 } {
+  // 将 IP 转换为数字种子
+  const seed = target.split('.').reduce((acc, part) => acc * 256 + parseInt(part, 10), 0)
+  const random = new SeededRandom(seed)
+
   // 生成随机端口
   const { min: minPorts, max: maxPorts } = HACK_CONFIG.PORT_COUNT_RANGE
-  const portCount = Math.floor(Math.random() * (maxPorts - minPorts + 1)) + minPorts
-  const ports: number[] = []
-  const availablePorts = [...NETWORK_CONFIG.COMMON_PORTS]
-
-  for (let i = 0; i < portCount && availablePorts.length > 0; i++) {
-    const index = Math.floor(Math.random() * availablePorts.length)
-    ports.push(availablePorts.splice(index, 1)[0])
-  }
+  const portCount = random.nextInt(minPorts, maxPorts)
+  const ports = random.pickMultiple(NETWORK_CONFIG.COMMON_PORTS, portCount).sort((a, b) => a - b)
 
   // 端口服务映射
   const serviceMap: Record<number, string> = {
@@ -56,10 +103,10 @@ function scanTarget(_target: string): {
 
   // 生成安全等级
   const { min: minSec, max: maxSec } = HACK_CONFIG.SECURITY_LEVEL_RANGE
-  const security = Math.floor(Math.random() * (maxSec - minSec + 1)) + minSec
+  const security = random.nextInt(minSec, maxSec)
 
   // 生成节点名称
-  const name = NETWORK_CONFIG.SERVER_NAMES[Math.floor(Math.random() * NETWORK_CONFIG.SERVER_NAMES.length)]
+  const name = random.pick(NETWORK_CONFIG.SERVER_NAMES)
 
   return { name, ports, security, services }
 }

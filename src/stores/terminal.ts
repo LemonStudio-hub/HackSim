@@ -43,9 +43,9 @@ export const useTerminalStore = defineStore('terminal', () => {
       timestamp: Date.now(),
     })
 
-    // 限制历史记录数量
-    if (history.value.length > TERMINAL_CONFIG.MAX_HISTORY) {
-      history.value = history.value.slice(-TERMINAL_CONFIG.MAX_HISTORY)
+    // 限制历史记录数量（使用 shift() 保持固定长度，避免创建新数组）
+    while (history.value.length > TERMINAL_CONFIG.MAX_HISTORY) {
+      history.value.shift()
     }
   }
 

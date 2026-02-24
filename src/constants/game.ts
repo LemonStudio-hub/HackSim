@@ -53,7 +53,7 @@ export const TERMINAL_CONFIG = {
   /** 默认字体大小 */
   DEFAULT_FONT_SIZE: 14,
   /** 最大历史记录数 */
-  MAX_HISTORY: 1000,
+  MAX_HISTORY: 5000,
   /** 命令执行超时时间（毫秒） */
   COMMAND_TIMEOUT: 5000,
 }
@@ -147,4 +147,80 @@ export const GAME_CONFIG = {
   NAME: 'HackSim',
   /** 自动保存间隔（毫秒） */
   AUTO_SAVE_INTERVAL: 30000,
+}
+
+/**
+ * 启动消息配置
+ */
+export interface BootMessage {
+  text: string
+  color: string
+  delay: number
+  pause?: boolean // 是否在显示此消息后暂停
+}
+
+export const BOOT_CONFIG = {
+  /** 启动速度倍数（越大越慢） */
+  SPEED_MULTIPLIER: 2,
+
+  /** 启动消息列表 */
+  MESSAGES: [
+    { text: '[BOOT] Starting HackSim OS v0.1.0...', color: '36', delay: 80 },
+    { text: '[SYSTEM] Detecting hardware configuration...', color: '36', delay: 100 },
+    { text: '[SYSTEM] CPU: Quantum Processor @ 4.2GHz', color: '90', delay: 60 },
+    { text: '[SYSTEM] RAM: 32TB Quantum Memory', color: '90', delay: 60 },
+    { text: '[SYSTEM] Storage: Neural Drive - ONLINE', color: '90', delay: 60, pause: true },
+    { text: '[KERNEL] Loading kernel modules...', color: '36', delay: 120 },
+    { text: '[KERNEL] Network stack initialized', color: '90', delay: 60 },
+    { text: '[KERNEL] File system mounted', color: '90', delay: 60 },
+    { text: '[KERNEL] Security protocols loaded', color: '90', delay: 60, pause: true },
+    { text: '[NETWORK] Establishing secure connections...', color: '36', delay: 150 },
+    { text: '[NETWORK] Connection established', color: '90', delay: 80 },
+    { text: '[NETWORK] Encryption: AES-256-GCM', color: '90', delay: 60 },
+    { text: '[NETWORK] Tunnel active: Secure', color: '90', delay: 60, pause: true },
+    { text: '[SERVICES] Loading system services...', color: '36', delay: 120 },
+    { text: '[SERVICES] Daemon: hacknetd - STARTED', color: '90', delay: 60 },
+    { text: '[SERVICES] Daemon: missiond - STARTED', color: '90', delay: 60 },
+    { text: '[SERVICES] Daemon: loggerd - STARTED', color: '90', delay: 60 },
+    { text: '[SERVICES] Daemon: terminald - STARTED', color: '90', delay: 60, pause: true },
+    { text: '[INTERFACE] Initializing terminal interface...', color: '36', delay: 120 },
+    { text: '[INTERFACE] Display: 1080p High-DPI', color: '90', delay: 60 },
+    { text: '[INTERFACE] Color mode: Full RGB', color: '90', delay: 60 },
+    { text: '[INTERFACE] Font: Hack Nerd Font', color: '90', delay: 60, pause: true },
+    { text: '[MODULES] Loading command modules...', color: '36', delay: 120 },
+    { text: '[MODULES] Loaded: basic commands (5)', color: '90', delay: 60 },
+    { text: '[MODULES] Loaded: hacking commands (3)', color: '90', delay: 60 },
+    { text: '[MODULES] Loaded: mission commands (3)', color: '90', delay: 60, pause: true },
+    { text: '[MISSION] Initializing mission system...', color: '36', delay: 120 },
+    { text: '[MISSION] Connecting to global network...', color: '90', delay: 80 },
+    { text: '[MISSION] Syncing with mission database...', color: '90', delay: 100 },
+    { text: '[MISSION] Database synchronized', color: '90', delay: 60, pause: true },
+    { text: '[PLAYER] Loading player profile...', color: '36', delay: 100 },
+    { text: '[PLAYER] Profile: Anonymous', color: '90', delay: 60 },
+    { text: '[PLAYER] Level: 1', color: '90', delay: 60 },
+    { text: '[PLAYER] Reputation: 0', color: '90', delay: 60 },
+    { text: '[PLAYER] Credits: 1000', color: '90', delay: 60, pause: true },
+    { text: '[SECURITY] Initializing security protocols...', color: '36', delay: 120 },
+    { text: '[SECURITY] Firewall: ACTIVE', color: '90', delay: 60 },
+    { text: '[SECURITY] Intrusion detection: ENABLED', color: '90', delay: 60 },
+    { text: '[SECURITY] Encryption keys: ROTATED', color: '90', delay: 60 },
+    { text: '[SECURITY] Anonymity layer: ACTIVE', color: '90', delay: 60, pause: true },
+    { text: '[SYSTEM] Running diagnostics...', color: '36', delay: 150 },
+    { text: '[SYSTEM] Memory integrity: OK', color: '32', delay: 80 },
+    { text: '[SYSTEM] Network connectivity: OK', color: '32', delay: 80 },
+    { text: '[SYSTEM] Security status: OK', color: '32', delay: 80 },
+    { text: '[SYSTEM] All systems operational', color: '32', delay: 100, pause: true },
+    { text: '', color: '', delay: 0 },
+    { text: '========================================', color: '90', delay: 100 },
+    { text: '     HackSim Terminal v0.1.0', color: '93', delay: 150 },
+    { text: '========================================', color: '90', delay: 100 },
+    { text: '', color: '', delay: 0 },
+    { text: 'System ready. Welcome, hacker.', color: '32', delay: 200, pause: true },
+    { text: '', color: '', delay: 0 },
+    { text: 'Quick Start:', color: '36', delay: 80 },
+    { text: '  Type "help"      - See all available commands', color: '90', delay: 60 },
+    { text: '  Type "missions"  - View available missions', color: '90', delay: 60 },
+    { text: '  Type "info"      - Check your stats', color: '90', delay: 60 },
+    { text: '', color: '', delay: 0 },
+  ] as BootMessage[],
 }
