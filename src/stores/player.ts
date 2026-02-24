@@ -53,17 +53,12 @@ export const usePlayerStore = defineStore('player', () => {
    * @param amount 经验值数量
    */
   function addExp(amount: number): void {
-    const oldLevel = player.value.level
     player.value.exp += amount
 
     // 检查是否升级
     while (player.value.exp >= expToNextLevel.value) {
       player.value.level++
       player.value.exp -= expToNextLevel.value
-    }
-
-    if (player.value.level > oldLevel) {
-      console.log(`Level up! You are now level ${player.value.level}`)
     }
   }
 

@@ -27,11 +27,11 @@ export const acceptCommand: BaseCommand = {
   name: 'accept',
   description: 'Accept a mission by ID or index',
   usage: 'accept <ID|index>',
+  validation: {
+    minArgs: 1,
+    maxArgs: 1,
+  },
   async execute(args: string[]): Promise<string> {
-    if (args.length === 0) {
-      return 'Error: Mission ID or index required\nUsage: accept <ID|index>\n\nUse "missions" to see available missions.'
-    }
-
     const missionStore = useMissionStore()
     const identifier = args[0]
 

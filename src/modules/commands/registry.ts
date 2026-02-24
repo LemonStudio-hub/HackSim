@@ -14,6 +14,18 @@ export interface Command {
 }
 
 /**
+ * 参数验证规则
+ */
+export interface ValidationRule {
+  /** 最小参数数量 */
+  minArgs?: number
+  /** 最大参数数量 */
+  maxArgs?: number
+  /** 参数验证器 */
+  validate?: (args: string[]) => { valid: boolean; message?: string }
+}
+
+/**
  * 基础命令接口
  */
 export interface BaseCommand extends Omit<Command, 'execute'> {
@@ -21,6 +33,8 @@ export interface BaseCommand extends Omit<Command, 'execute'> {
   aliases?: string[]
   /** 命令执行函数 */
   execute: (args: string[]) => Promise<string>
+  /** 参数验证规则 */
+  validation?: ValidationRule
 }
 
 /**
@@ -98,5 +112,43 @@ export class CommandRegistry {
    */
   clear(): void {
     this.commands.clear()
+  }
+
+  /**
+   * 验证命令参数
+   * @param command 命令对象
+   * @param args 参数数组
+   * @returns 验证结果
+   */
+  validateCommand(command: BaseCommand, args: string[]): { valid: boolean; message?: string } {
+    // 如果没有验证规则，直接返回有效
+    if (!command.validation) {
+      return { valid: true }
+    }
+
+    const { minArgs, maxArgs, validate } = command.validation
+
+    // 检查最小参数数量
+    if (minArgs !== undefined && args.length < minArgs) {
+      return {
+        valid: false,
+        message: `Error: ${command.name} requires at least ${minArgs} argument(s). Usage: ${command.usage}`,
+      }
+    }
+
+    // 检查最大参数数量
+    if (maxArgs !== undefined && args.length > maxArgs) {
+      return {
+        valid: false,
+        message: `Error: ${command.name} accepts at most ${maxArgs} argument(s). Usage: ${command.usage}`,
+      }
+    }
+
+    // 执行自定义验证
+    if (validate) {
+      return validate(args)
+    }
+
+    return { valid: true }
   }
 }

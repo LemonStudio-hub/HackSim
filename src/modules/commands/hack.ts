@@ -8,7 +8,7 @@ import { useTerminalStore } from '../../stores/terminal'
 import { useMissionStore } from '../../stores/mission'
 import { usePlayerStore } from '../../stores/player'
 import { NETWORK_CONFIG, THEME } from '../../constants/game'
-import { sleep } from '../../utils/helpers'
+import { sleep, isValidIP } from '../../utils/helpers'
 
 /**
  * 扫描网络节点信息
@@ -70,19 +70,22 @@ export const scanCommand: BaseCommand = {
   name: 'scan',
   description: 'Scan a target IP address',
   usage: 'scan <IP>',
+  validation: {
+    minArgs: 1,
+    maxArgs: 1,
+    validate: (args: string[]) => {
+      if (!isValidIP(args[0])) {
+        return {
+          valid: false,
+          message: `Error: Invalid IP address format: ${args[0]}`,
+        }
+      }
+      return { valid: true }
+    },
+  },
   async execute(args: string[]): Promise<string> {
-    if (args.length === 0) {
-      return 'Error: Target IP required\nUsage: scan <IP>'
-    }
-
     const target = args[0]
     const terminalStore = useTerminalStore()
-
-    // 验证 IP 格式
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (!ipRegex.test(target)) {
-      return `Error: Invalid IP address format: ${target}`
-    }
 
     // 模拟扫描过程
     await sleep(1000)
@@ -122,19 +125,22 @@ export const connectCommand: BaseCommand = {
   name: 'connect',
   description: 'Connect to a target system',
   usage: 'connect <IP>',
+  validation: {
+    minArgs: 1,
+    maxArgs: 1,
+    validate: (args: string[]) => {
+      if (!isValidIP(args[0])) {
+        return {
+          valid: false,
+          message: `Error: Invalid IP address format: ${args[0]}`,
+        }
+      }
+      return { valid: true }
+    },
+  },
   async execute(args: string[]): Promise<string> {
-    if (args.length === 0) {
-      return 'Error: Target IP required\nUsage: connect <IP>'
-    }
-
     const target = args[0]
     const terminalStore = useTerminalStore()
-
-    // 验证 IP 格式
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (!ipRegex.test(target)) {
-      return `Error: Invalid IP address format: ${target}`
-    }
 
     // 模拟连接过程
     await sleep(800)
@@ -185,21 +191,24 @@ export const hackCommand: BaseCommand = {
   name: 'hack',
   description: 'Hack a target system',
   usage: 'hack <IP>',
+  validation: {
+    minArgs: 1,
+    maxArgs: 1,
+    validate: (args: string[]) => {
+      if (!isValidIP(args[0])) {
+        return {
+          valid: false,
+          message: `Error: Invalid IP address format: ${args[0]}`,
+        }
+      }
+      return { valid: true }
+    },
+  },
   async execute(args: string[]): Promise<string> {
-    if (args.length === 0) {
-      return 'Error: Target IP required\nUsage: hack <IP>'
-    }
-
     const target = args[0]
     const terminalStore = useTerminalStore()
     const missionStore = useMissionStore()
     const playerStore = usePlayerStore()
-
-    // 验证 IP 格式
-    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-    if (!ipRegex.test(target)) {
-      return `Error: Invalid IP address format: ${target}`
-    }
 
     // 检查是否有活跃任务
     if (!missionStore.active) {

@@ -87,3 +87,32 @@ export interface TerminalHistory {
   /** 时间戳 */
   timestamp: number
 }
+
+/**
+ * 终端接口
+ * 定义xterm.js终端实例的基本方法
+ */
+export interface ITerminal {
+  /** 写入文本到终端 */
+  write(data: string): void
+  /** 写入文本并换行 */
+  writeln(data: string): void
+  /** 清空终端 */
+  clear(): void
+  /** 刷新终端 */
+  refresh(start: number, end: number): void
+  /** 获取终端行数 */
+  rows: number
+  /** 获取终端列数 */
+  cols: number
+  /** 终端选项 */
+  options: ITerminalOptions
+}
+
+/**
+ * 终端选项接口
+ */
+export interface ITerminalOptions {
+  fontSize?: number
+  fontFamily?: string
+}

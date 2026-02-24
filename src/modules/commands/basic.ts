@@ -15,6 +15,9 @@ export const helpCommand: BaseCommand = {
   name: 'help',
   description: 'Show available commands',
   usage: 'help [command]',
+  validation: {
+    maxArgs: 1,
+  },
   async execute(args: string[]): Promise<string> {
     if (args.length > 0) {
       // 显示特定命令的帮助

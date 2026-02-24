@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { TerminalHistory } from '../types'
+import type { TerminalHistory, ITerminal } from '../types'
 import { TERMINAL_CONFIG } from '../constants/game'
 
 export const useTerminalStore = defineStore('terminal', () => {
@@ -21,7 +21,7 @@ export const useTerminalStore = defineStore('terminal', () => {
   const isProcessing = ref(false)
 
   /** 终端实例引用 */
-  const terminalInstance = ref<any>(null)
+  const terminalInstance = ref<ITerminal | null>(null)
 
   /** 光标位置 */
   const cursorPosition = ref(0)
@@ -79,7 +79,7 @@ export const useTerminalStore = defineStore('terminal', () => {
    * 设置终端实例
    * @param instance 终端实例
    */
-  function setTerminalInstance(instance: any): void {
+  function setTerminalInstance(instance: ITerminal): void {
     terminalInstance.value = instance
   }
 

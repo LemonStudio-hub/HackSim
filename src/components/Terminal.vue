@@ -13,6 +13,7 @@ import { usePlayerStore } from '../stores/player'
 import { useMissionStore } from '../stores/mission'
 import { useGameStore } from '../stores/game'
 import { CommandRegistry } from '../modules/commands'
+import { type BaseCommand } from '../modules/commands/registry'
 import { helpCommand, clearCommand, infoCommand, gameCommand, versionCommand } from '../modules/commands/basic'
 import { scanCommand, connectCommand, hackCommand } from '../modules/commands/hack'
 import { missionsCommand, acceptCommand, statusCommand } from '../modules/commands/mission'
@@ -259,8 +260,17 @@ async function executeCommand(input: string) {
       return
     }
 
+    // 验证命令参数
+    const validationResult = commandRegistry.validateCommand(command, args)
+    if (!validationResult.valid) {
+      terminal?.writeln(validationResult.message || 'Invalid command arguments')
+      terminal?.writeln('')
+      showPrompt()
+      return
+    }
+
     // 执行命令
-    const output = await (command as any).execute(args)
+    const output = await (command as BaseCommand).execute(args)
     
     // 处理特殊命令
     if (output === '__CLEAR__') {
@@ -278,13 +288,16 @@ async function executeCommand(input: string) {
       showPrompt()
     }
   } catch (error) {
+    // 错误处理：确保终端状态一致
     try {
-      terminal?.writeln(`Error: ${error}`)
-      // 输出提示符
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      terminal?.writeln(`Error: ${errorMessage}`)
       terminal?.writeln('')
       showPrompt()
     } catch (writeError) {
+      // 如果写入错误也无法处理，至少输出到控制台
       console.error('Failed to write error to terminal:', writeError)
+      console.error('Original error:', error)
     }
   }
 }
