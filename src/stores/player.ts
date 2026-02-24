@@ -8,6 +8,7 @@ import { ref, computed } from 'vue'
 import type { Player } from '../types'
 import { INITIAL_PLAYER, EXP_CONFIG } from '../constants/game'
 import { nanoid } from 'nanoid'
+import { drawBorder, drawTitle, drawSeparator, drawKeyValue } from '../utils/format'
 
 export const usePlayerStore = defineStore('player', () => {
   // ========== 状态 ==========
@@ -110,27 +111,18 @@ export const usePlayerStore = defineStore('player', () => {
    * @returns 格式化的玩家信息字符串
    */
   function getPlayerInfo(): string {
-    const lineLength = 60
-    const contentLength = lineLength - 2 // 去掉两边边框
-    
-    const nameLine = `  Name:     ${player.value.name}${' '.repeat(Math.max(0, contentLength - 11 - player.value.name.length))}`
-    const levelLine = `  Level:    ${player.value.level}${' '.repeat(Math.max(0, contentLength - 11 - player.value.level.toString().length))}`
     const expProgress = `${player.value.exp}/${expToNextLevel.value} (${levelProgress.value}%)`
-    const expLine = `  EXP:      ${expProgress}${' '.repeat(Math.max(0, contentLength - 11 - expProgress.length))}`
-    const creditsLine = `  Credits:  ${player.value.credits}${' '.repeat(Math.max(0, contentLength - 11 - player.value.credits.toString().length))}`
-    const reputationLine = `  Reputation: ${player.value.reputation}${' '.repeat(Math.max(0, contentLength - 13 - player.value.reputation.toString().length))}`
     
-    return `
-╔════════════════════════════════════════════════════════════╗
-║          PLAYER INFO                  ║
-╠════════════════════════════════════════════════════════════╣
-║${nameLine}║
-║${levelLine}║
-║${expLine}║
-║${creditsLine}║
-║${reputationLine}║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    const content: string[] = []
+    content.push(drawTitle('PLAYER INFO', 16))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Name', player.value.name, 10))
+    content.push(drawKeyValue('Level', player.value.level.toString(), 10))
+    content.push(drawKeyValue('EXP', expProgress, 10))
+    content.push(drawKeyValue('Credits', player.value.credits.toString(), 10))
+    content.push(drawKeyValue('Reputation', player.value.reputation.toString(), 12))
+
+    return drawBorder(content)
   }
 
   return {

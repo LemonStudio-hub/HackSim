@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { GAME_CONFIG } from '../constants/game'
+import { drawBorder, drawTitle, drawSeparator, drawKeyValue } from '../utils/format'
 
 export const useGameStore = defineStore('game', () => {
   // ========== 状态 ==========
@@ -125,27 +126,18 @@ export const useGameStore = defineStore('game', () => {
    * @returns 游戏信息字符串
    */
   function getGameInfo(): string {
-    const lineLength = 60
-    const contentLength = lineLength - 2 // 去掉两边边框
-    
-    const nameLine = `  ${GAME_CONFIG.NAME}${' '.repeat(Math.max(0, contentLength - GAME_CONFIG.NAME.length))}`
-    const versionLine = `  Version ${GAME_CONFIG.VERSION}${' '.repeat(Math.max(0, contentLength - 8 - GAME_CONFIG.VERSION.length))}`
     const statusValue = isRunning.value ? 'Running' : 'Paused'
-    const statusLine = `  Status:      ${statusValue}${' '.repeat(Math.max(0, contentLength - 13 - statusValue.length))}`
     const initValue = isInitialized.value ? 'Yes' : 'No'
-    const initLine = `  Initialized: ${initValue}${' '.repeat(Math.max(0, contentLength - 14 - initValue.length))}`
-    const timeLine = `  Play Time:   ${formattedPlayTime.value}${' '.repeat(Math.max(0, contentLength - 13 - formattedPlayTime.value.length))}`
     
-    return `
-╔════════════════════════════════════════════════════════════╗
-║${nameLine}║
-║${versionLine}║
-╠════════════════════════════════════════════════════════════╣
-║${statusLine}║
-║${initLine}║
-║${timeLine}║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    const content: string[] = []
+    content.push(drawTitle(GAME_CONFIG.NAME, 0))
+    content.push(drawTitle(`Version ${GAME_CONFIG.VERSION}`, 0))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Status', statusValue, 12))
+    content.push(drawKeyValue('Initialized', initValue, 14))
+    content.push(drawKeyValue('Play Time', formattedPlayTime.value, 12))
+
+    return drawBorder(content)
   }
 
   return {

@@ -15,6 +15,7 @@ import {
   drawHeader,
   drawSubHeader,
   drawError,
+  drawKeyValue,
 } from '../../utils/format'
 
 /**
@@ -117,11 +118,4 @@ export const versionCommand: BaseCommand = {
     
     return drawBorder(content)
   },
-}
-
-/**
- * 辅助函数：绘制键值对
- */
-function drawKeyValue(key: string, value: string, keyWidth: number = 8): string {
-  return `  ${key}:${' '.repeat(Math.max(0, keyWidth - key.length - 1))}${value}`
 }

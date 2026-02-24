@@ -8,7 +8,7 @@ import { ref, computed } from 'vue'
 import type { Mission } from '../types'
 import { nanoid } from 'nanoid'
 import { MISSION_CONFIG, NETWORK_CONFIG } from '../constants/game'
-import { drawBorder, drawTitle, drawSeparator, drawListItem, drawError } from '../utils/format'
+import { drawBorder, drawTitle, drawSeparator, drawListItem, drawError, drawKeyValue } from '../utils/format'
 
 export const useMissionStore = defineStore('mission', () => {
   // ========== 状态 ==========
@@ -179,39 +179,27 @@ export const useMissionStore = defineStore('mission', () => {
       available.value.find((m) => m.id === missionId) ||
       (active.value?.id === missionId ? active.value : null) ||
       completed.value.find((m) => m.id === missionId)
-
+  
     if (!mission) {
       return null
     }
-
-    const lineLength = 60
-    const contentLength = lineLength - 2 // 去掉两边边框
-    
+  
     const difficultyStars = '★'.repeat(mission.difficulty) + '☆'.repeat(5 - mission.difficulty)
-
-    const titleLine = `  MISSION: ${mission.title}${' '.repeat(Math.max(0, contentLength - 11 - mission.title.length))}`
-    const descLine = `  Description: ${mission.description}${' '.repeat(Math.max(0, contentLength - 14 - mission.description.length))}`
-    const targetLine = `  Target:      ${mission.target}${' '.repeat(Math.max(0, contentLength - 14 - mission.target.length))}`
-    const diffLine = `  Difficulty:  ${difficultyStars}${' '.repeat(Math.max(0, contentLength - 14 - difficultyStars.length))}`
-    const statusValue = mission.status.toUpperCase()
-    const statusLine = `  Status:      ${statusValue}${' '.repeat(Math.max(0, contentLength - 14 - statusValue.length))}`
-
-    return `
-╔════════════════════════════════════════════════════════════╗
-║${titleLine}║
-╠════════════════════════════════════════════════════════════╣
-║${descLine}║
-║${targetLine}║
-║${diffLine}║
-║${statusLine}║
-╠════════════════════════════════════════════════════════════╣
-║  REWARDS:                                                   ║
-║  EXP:         ${mission.reward.exp}${' '.repeat(Math.max(0, contentLength - 16 - mission.reward.exp.toString().length))}║
-║  Credits:     ${mission.reward.credits}${' '.repeat(Math.max(0, contentLength - 16 - mission.reward.credits.toString().length))}║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+  
+    const content: string[] = []
+    content.push(drawTitle(`MISSION: ${mission.title}`, 0))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Description', mission.description, 12))
+    content.push(drawKeyValue('Target', mission.target, 12))
+    content.push(drawKeyValue('Difficulty', difficultyStars, 12))
+    content.push(drawKeyValue('Status', mission.status.toUpperCase(), 12))
+    content.push(drawSeparator())
+    content.push(drawListItem('REWARDS:', ''))
+    content.push(drawListItem('EXP:', mission.reward.exp.toString()))
+    content.push(drawListItem('Credits:', mission.reward.credits.toString()))
+  
+    return drawBorder(content)
   }
-
   /**
    * 获取任务列表
    * @returns 任务列表字符串
@@ -220,35 +208,27 @@ export const useMissionStore = defineStore('mission', () => {
     if (available.value.length === 0 && !active.value) {
       return drawError('No missions available. Try again later.')
     }
-
-    const lineWidth = 60
-    const contentLength = lineWidth - 2
-    
+  
     const content: string[] = []
     content.push(drawTitle('AVAILABLE MISSIONS', 14))
     content.push(drawSeparator())
-
+  
     if (active.value) {
       const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
-      const idPrefix = `[ACTIVE] ${active.value.id.substring(0, 8)} - `
-      const titlePart = `${active.value.title} ${stars}`
-      const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
-      content.push(`${idPrefix}${titlePart}${' '.repeat(padding)}`)
+      const missionLine = `  [ACTIVE] ${active.value.id.substring(0, 8)} - ${active.value.title} ${stars}`
+      content.push(missionLine.padEnd(58))
     }
-
+  
     available.value.forEach((mission, index) => {
       const stars = '★'.repeat(mission.difficulty) + '☆'.repeat(5 - mission.difficulty)
-      const idPrefix = `[${(index + 1).toString().padStart(2)}] ${mission.id.substring(0, 8)} - `
-      const titlePart = `${mission.title} ${stars}`
-      const padding = Math.max(0, contentLength - idPrefix.length - titlePart.length)
-      content.push(`${idPrefix}${titlePart}${' '.repeat(padding)}`)
+      const missionLine = `  [${(index + 1).toString().padStart(2)}] ${mission.id.substring(0, 8)} - ${mission.title} ${stars}`
+      content.push(missionLine.padEnd(58))
     })
-
+  
     const result = drawBorder(content)
     
     return result + '\n\n' + drawListItem('Use:', '"accept <ID>" to accept a mission')
   }
-
   /**
    * 获取当前任务状态
    * @returns 当前任务信息字符串
@@ -257,36 +237,23 @@ export const useMissionStore = defineStore('mission', () => {
     if (!active.value) {
       return drawError('No active mission.') + '\nUse "missions" to see available missions.'
     }
-
-    const lineLength = 60
-    const contentLength = lineLength - 2
-    
+  
     const stars = '★'.repeat(active.value.difficulty) + '☆'.repeat(5 - active.value.difficulty)
     
-    const titleLine = `  CURRENT MISSION${' '.repeat(Math.max(0, contentLength - 16))}`
-    const nameLine = `  Title:       ${active.value.title}${' '.repeat(Math.max(0, contentLength - 15 - active.value.title.length))}`
-    const targetLine = `  Target:      ${active.value.target}${' '.repeat(Math.max(0, contentLength - 15 - active.value.target.length))}`
-    const diffLine = `  Difficulty:  ${stars}${' '.repeat(Math.max(0, contentLength - 15 - stars.length))}`
-    const obj1Line = `  [ ] Scan target (${active.value.target})${' '.repeat(Math.max(0, contentLength - 17 - active.value.target.length))}`
-    const obj2Line = `  [ ] Connect to target${' '.repeat(Math.max(0, contentLength - 22))}`
-    const obj3Line = `  [ ] Hack target${' '.repeat(Math.max(0, contentLength - 16))}`
-
-    return `
-╔════════════════════════════════════════════════════════════╗
-║${titleLine}║
-╠════════════════════════════════════════════════════════════╣
-║${nameLine}║
-║${targetLine}║
-║${diffLine}║
-╠════════════════════════════════════════════════════════════╣
-║  OBJECTIVES:                                                ║
-║${obj1Line}║
-║${obj2Line}║
-║${obj3Line}║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    const content: string[] = []
+    content.push(drawTitle('CURRENT MISSION', 0))
+    content.push(drawSeparator())
+    content.push(drawKeyValue('Title', active.value.title, 12))
+    content.push(drawKeyValue('Target', active.value.target, 12))
+    content.push(drawKeyValue('Difficulty', stars, 12))
+    content.push(drawSeparator())
+    content.push(drawListItem('OBJECTIVES:', ''))
+    content.push(drawListItem('[ ]', `Scan target (${active.value.target})`))
+    content.push(drawListItem('[ ]', 'Connect to target'))
+    content.push(drawListItem('[ ]', 'Hack target'))
+  
+    return drawBorder(content)
   }
-
   /**
    * 重置任务系统
    */
