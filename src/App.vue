@@ -19,11 +19,11 @@
     </header>
 
     <main class="app-main">
-      <div class="sidebar">
-        <UserPanel />
-        <MissionPanel />
+      <div class="sidebar" :class="{ 'mobile-hidden': isMobile && activeTab !== 'user' && activeTab !== 'mission' }">
+        <UserPanel :class="{ 'mobile-hidden': isMobile && activeTab !== 'user' }" />
+        <MissionPanel :class="{ 'mobile-hidden': isMobile && activeTab !== 'mission' }" />
       </div>
-      <div class="content">
+      <div class="content" :class="{ 'mobile-hidden': isMobile && activeTab !== 'terminal' }">
         <Terminal />
       </div>
     </main>
@@ -84,20 +84,6 @@ function checkMobile() {
  */
 function switchTab(tab: string) {
   activeTab.value = tab
-  
-  // 在移动端，滚动到对应内容
-  if (isMobile.value) {
-    setTimeout(() => {
-      const sidebar = document.querySelector('.sidebar')
-      const content = document.querySelector('.content')
-      
-      if (tab === 'terminal') {
-        content?.scrollIntoView({ behavior: 'smooth' })
-      } else {
-        sidebar?.scrollIntoView({ behavior: 'smooth' })
-      }
-    }, 100)
-  }
 }
 
 /**
@@ -248,6 +234,11 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+// 移动端隐藏类
+.mobile-hidden {
+  display: none !important;
+}
+
 // 移动端导航栏
 .mobile-nav {
   display: none;
@@ -368,11 +359,13 @@ onUnmounted(() => {
 
   .app-main {
     flex-direction: column;
+    padding-bottom: 60px; // 为底部导航栏留出空间
   }
 
   .sidebar {
     width: 100%;
-    max-height: 35%;
+    height: 100%;
+    max-height: none;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
     padding: var(--spacing-sm);
@@ -381,7 +374,8 @@ onUnmounted(() => {
 
   .content {
     flex: 1;
-    min-height: 65vh;
+    height: 100%;
+    min-height: 100%;
   }
 
   .mobile-nav {
