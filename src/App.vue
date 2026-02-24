@@ -5,7 +5,6 @@
         <h1 class="app-title">
           <span class="title-prefix">HACK</span>SIM
         </h1>
-        <span class="app-version">v{{ version }}</span>
       </div>
       <div class="header-right">
         <div class="status-indicator" :class="{ online: gameStore.isRunning }">
@@ -68,9 +67,6 @@ import MissionPanel from './components/MissionPanel.vue'
 const gameStore = useGameStore()
 const activeTab = ref('terminal')
 const isMobile = ref(false)
-
-// 版本号（从 package.json 读取）
-const version = '0.1.0'
 
 /**
  * 检测是否为移动设备
@@ -144,15 +140,6 @@ onUnmounted(() => {
     color: var(--primary);
     text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
   }
-}
-
-.app-version {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  background-color: var(--bg-hover);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
 }
 
 .header-right {
