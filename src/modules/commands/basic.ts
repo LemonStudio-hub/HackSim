@@ -16,38 +16,31 @@ export const helpCommand: BaseCommand = {
   description: 'Show available commands',
   usage: 'help [command]',
   async execute(args: string[]): Promise<string> {
-    // TODO: 需要获取命令注册表实例
-    // 暂时返回静态帮助信息
-
     if (args.length > 0) {
       // 显示特定命令的帮助
       const commandName = args[0]
       return `Help for command: ${commandName}\n(Coming soon)`
     }
 
-    return `
-╔════════════════════════════════════════════════════════════╗
-║                      COMMANDS                               ║
-╠════════════════════════════════════════════════════════════╣
-║  Basic Commands:                                            ║
-║  help         - Show this help message                     ║
-║  clear        - Clear the terminal                         ║
-║  info         - Show player information                    ║
-║  game         - Show game information                      ║
-║                                                              ║
-║  Terminal Commands:                                         ║
-║  scan <IP>    - Scan a target IP address                   ║
-║  connect <IP> - Connect to a target system                 ║
-║  hack <IP>    - Hack a target system                       ║
-║                                                              ║
-║  Mission Commands:                                          ║
-║  missions     - Show available missions                    ║
-║  accept <ID>  - Accept a mission by ID                     ║
-║  status       - Show current mission status                ║
-║                                                              ║
-║  Use 'help <command>' for more information about a command ║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    return `Available Commands:
+  Basic Commands:
+    help         - Show this help message
+    clear        - Clear the terminal
+    info         - Show player information
+    game         - Show game information
+    version      - Show version information
+  
+  Hacking Commands:
+    scan <IP>    - Scan a target IP address
+    connect <IP> - Connect to a target system
+    hack <IP>    - Hack a target system
+  
+  Mission Commands:
+    missions     - Show available missions
+    accept <ID>  - Accept a mission by ID
+    status       - Show current mission status
+  
+  Use 'help <command>' for more information about a command`
   },
 }
 
@@ -99,21 +92,10 @@ export const versionCommand: BaseCommand = {
   description: 'Show version information',
   usage: 'version',
   async execute(): Promise<string> {
-    const lineLength = 60
-    const contentLength = lineLength - 2 // 去掉两边边框
-    
-    const nameLine = `  ${GAME_CONFIG.NAME}${' '.repeat(Math.max(0, contentLength - GAME_CONFIG.NAME.length - 2))}`
-    const versionLine = `  Version ${GAME_CONFIG.VERSION}${' '.repeat(Math.max(0, contentLength - '  Version '.length - GAME_CONFIG.VERSION.length - 2))}`
-    
-    return `
-╔════════════════════════════════════════════════════════════╗
-║${nameLine}║
-║${versionLine}║
-╠════════════════════════════════════════════════════════════╣
-║  A hacker simulator game built with Vue 3 + TypeScript     ║
-║                                                              ║
-║  © 2026 HackSim. All rights reserved.                      ║
-╚════════════════════════════════════════════════════════════╝
-    `.trim()
+    return `${GAME_CONFIG.NAME} v${GAME_CONFIG.VERSION}
+
+A hacker simulator game built with Vue 3 + TypeScript
+
+© 2026 HackSim. All rights reserved.`
   },
 }

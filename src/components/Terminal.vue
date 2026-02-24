@@ -143,7 +143,7 @@ function showWelcomeMessage() {
   
   try {
     // 只显示简单的提示
-    terminal.writeln('提示：输入 help 命令查看所有可用命令')
+    terminal.writeln('Tip: Type "help" to see all available commands')
     terminal.writeln('')
   } catch (error) {
     console.error('Failed to show welcome message:', error)
@@ -224,14 +224,19 @@ async function executeCommand(input: string) {
     
     // 处理特殊命令
     if (output === '__CLEAR__') {
+      // clear命令：清空终端后显示提示符
       terminal.clear()
-    } else if (output) {
+      showPrompt()
+    } else if (output && output.trim() !== '') {
+      // 有输出：显示输出，然后显示提示符
       terminal?.writeln(output)
+      terminal?.writeln('')
+      showPrompt()
+    } else {
+      // 无输出：直接显示提示符
+      terminal?.writeln('')
+      showPrompt()
     }
-    
-    // 输出提示符
-    terminal?.writeln('')
-    showPrompt()
   } catch (error) {
     try {
       terminal?.writeln(`Error: ${error}`)
