@@ -33,6 +33,41 @@ let resizeTimer: number | null = null
 let isInitialized = false
 
 /**
+ * 格式化终端
+ * 在初始化后执行，清除任何可能的渲染问题
+ */
+function formatTerminal() {
+  if (!terminal) return
+  
+  try {
+    // 清空终端缓冲区
+    terminal.clear()
+    
+    // 重置终端状态
+    terminal.write('\x1bc')  // 完整重置终端
+    
+    // 移动光标到左上角
+    terminal.write('\x1b[H')
+    
+    // 清除屏幕
+    terminal.write('\x1b[2J')
+    
+    // 重置所有属性
+    terminal.write('\x1b[0m')
+    
+    // 确保光标可见
+    terminal.write('\x1b[?25h')
+    
+    // 刷新终端以确保所有操作生效
+    if (terminal) {
+      terminal.refresh(0, terminal.rows - 1)
+    }
+  } catch (error) {
+    console.error('Failed to format terminal:', error)
+  }
+}
+
+/**
  * 显示提示符
  */
 function showPrompt() {
@@ -59,10 +94,9 @@ function initTerminal() {
         background: '#0d0208',
         foreground: '#e0e0e0',
         cursor: '#00ff41',
-        cursorAccent: '#0d0208',
       },
-      cursorBlink: true,
-      cursorStyle: 'block',
+      cursorBlink: false,
+      cursorStyle: 'underline',
       scrollback: 1000,
       tabStopWidth: 4,
     })
@@ -77,7 +111,28 @@ function initTerminal() {
     // 延迟执行fit，确保DOM已完全渲染
     setTimeout(() => {
       try {
-        fitAddon?.fit()
+        if (!terminal || !fitAddon) {
+          console.error('Terminal or fitAddon not initialized')
+          return
+        }
+        
+        fitAddon.fit()
+        
+        // fit完成后，执行终端格式化操作
+        formatTerminal()
+        
+        // 然后输出欢迎信息和提示符
+        showWelcomeMessage()
+        showPrompt()
+        
+        // 生成初始任务
+        missionStore.generateMissions(playerStore.player.level)
+        
+        // 初始化游戏
+        gameStore.initialize()
+        
+        // 添加键盘输入监听
+        terminal.onData(handleTerminalInput)
       } catch (error) {
         console.error('Failed to fit terminal:', error)
       }
@@ -88,21 +143,6 @@ function initTerminal() {
 
     // 初始化命令注册表
     initCommands()
-
-    // 显示欢迎信息
-    showWelcomeMessage()
-
-    // 显示初始提示符
-    showPrompt()
-
-    // 生成初始任务
-    missionStore.generateMissions(playerStore.player.level)
-
-    // 初始化游戏
-    gameStore.initialize()
-
-    // 添加键盘输入监听
-    terminal.onData(handleTerminalInput)
 
     isInitialized = true
   } catch (error) {
